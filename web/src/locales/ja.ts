@@ -19,7 +19,6 @@ export default {
       portugueseBr: 'ポルトガル語 (ブラジル)',
       chinese: '中国語（簡体字）',
       traditionalChinese: '中国語（繁体字）',
-      bulgarian: 'ブルガリア語',
       language: '言語',
       languageMessage: 'あなたの言語を入力してください！',
       languagePlaceholder: 'あなたの言語を選択してください',
@@ -103,7 +102,7 @@ export default {
       action: 'アクション',
       parsingStatus: 'パースステータス',
       parsingStatusTip:
-        'ドキュメントの解析時間はさまざまな要因によって異なります。Knowledge Graph、RAPTOR、自動質問抽出、自動キーワード抽出などの機能を有効にすると、処理時間が大幅に増加します。進行バーが止まった場合は、次の2つのFAQをご参照ください: https://ragflow.io/docs/dev/faq#why-does-my-document-parsing-stall-at-under-one-percent.',
+        'ドキュメントの解析時間はさまざまな要因によって異なります。Knowledge Graph、RAPTOR、自動質問抽出、自動キーワード抽出などの機能を有効にすると、処理時間が大幅に増加します。進行バーが止まった場合は、FAQをご参照ください。',
       processBeginAt: 'プロセス開始時刻',
       processDuration: '処理時間',
       progressMsg: '進行状況メッセージ',
@@ -111,7 +110,7 @@ export default {
         'この場所での変更は自動的に保存されないため、注意してください。ここでデフォルト設定を調整した場合、たとえばキーワードの類似度重みなど、チャットアシスタンの設定またはリコール演算子の設定場所で関連する設定を必ず同期して更新してください。',
       similarityThreshold: '類似度しきい値',
       similarityThresholdTip:
-        'RAGFlowは、ユーザークエリとチャンク間の類似度スコアがこのしきい値を下回る場合、そのチャンクを結果から除外します。デフォルトでは、閾値は0.2に設定されています。これは、ハイブリッド類似度スコアが20以上のチャンクのみが取得されることを意味します。',
+        '本システムは、ユーザークエリとチャンク間の類似度スコアがこのしきい値を下回る場合、そのチャンクを結果から除外します。デフォルトでは、閾値は0.2に設定されています。これは、ハイブリッド類似度スコアが20以上のチャンクのみが取得されることを意味します。',
       vectorSimilarityWeight: 'ベクトル類似度の重み',
       vectorSimilarityWeightTip:
         'ベクトルコサイン類似度と併用する際のキーワード類似度の重みを設定します。2つの重みの合計は1.0でなければなりません。',
@@ -140,7 +139,7 @@ export default {
       toMessage: '終了ページ番号が不足しています（除外）',
       layoutRecognize: 'レイアウト認識',
       layoutRecognizeTip:
-        'レイアウト分析のためにビジュアルモデルを使用し、文書の構造を理解しやすくします。詳細については、https://ragflow.io/docs/dev/select_pdf_parser をご覧ください。',
+        'レイアウト分析のためにビジュアルモデルを使用し、文書の構造を理解しやすくします。',
       taskPageSize: 'タスクページサイズ',
       taskPageSizeMessage: 'タスクページサイズを入力してください',
       taskPageSizeTip: `レイアウト認識中、PDFファイルはチャンクに分割され、処理速度を向上させるために並列処理されます。`,
@@ -158,28 +157,25 @@ export default {
       cancel: 'キャンセル',
       rerankModel: 'リランキングモデル',
       rerankPlaceholder: '選択してください',
-      rerankTip: `任意です。空欄の場合、RAGFlowは加重キーワード類似度と加重ベクトルコサイン類似度の組み合わせを使用します。リランキングモデルが選択された場合は、加重リランキングスコアが加重ベクトルコサイン類似度に代わります。リランキングモデルを使用すると、システムの応答時間が大幅に増加することにご注意ください。リランキングモデルを使用する場合は、SaaSリランカーを使用してください。ローカルにデプロイされたリランキングモデルを使用する場合は、docker-compose-gpu.ymlでRAGFlowを起動してください。`,
+      rerankTip: `任意です。空欄の場合、本システムは加重キーワード類似度と加重ベクトルコサイン類似度の組み合わせを使用します。リランキングモデルが選択された場合は、加重リランキングスコアが加重ベクトルコサイン類似度に代わります。リランキングモデルを使用すると、応答時間が大幅に増加することにご注意ください。リランキングモデルを使用する場合は、環境を適切に構成してください。`,
       topK: 'トップK',
       topKTip: `Rerank modelと一緒に使用する場合、この設定は指定されたreranking modelに送信するテキストのチャンク数を定義します。`,
       delimiter: `テキストセグメンテーションの区切り文字`,
       delimiterTip:
         'デリミタやセパレータは、一つまたは複数の特殊文字で構成できます。複数の文字の場合、バッククォート(``)で囲むようにしてください。たとえば、デリミタを次のように設定した場合: \\n ## ;、テキストは行末、ダブルハッシュ記号(##)、およびセミコロンで分割されます。デリミタを設定する前に、テキストのセグメンテーションとチャンキングのメカニズムを理解していることを確認してください。',
       html4excel: 'ExcelをHTMLに変換',
-      html4excelTip: `General切片方法と併用してください。無効の場合、表計算ファイル（XLSX、XLS（Excel 97-2003））は行ごとにキーと値のペアとして解析されます。有効の場合、表計算ファイルはHTML表として解析されます。元の表が12行を超える場合、システムは自動的に12行ごとに複数のHTML表に分割します。詳細については、https://ragflow.io/docs/dev/enable_excel2html をご覧ください。`,
+      html4excelTip: `General切片方法と併用してください。無効の場合、表計算ファイル（XLSX、XLS（Excel 97-2003））は行ごとにキーと値のペアとして解析されます。有効の場合、表計算ファイルはHTML表として解析されます。元の表が12行を超える場合、システムは自動的に12行ごとに複数のHTML表に分割します。`,
       autoKeywords: '自動キーワード',
-      autoKeywordsTip: `各チャンクに含まれるキーワードのランキングを向上させるために、自動的にN個のキーワードを抽出します。「システムモデル設定」で指定されたチャットモデルによって追加のトークンが消費されることに注意してください。チャンクリストから追加されたキーワードを確認または更新することができます。詳細は https://ragflow.io/docs/dev/autokeyword_autoquestion をご覧ください。`,
+      autoKeywordsTip: `各チャンクに含まれるキーワードのランキングを向上させるために、自動的にN個のキーワードを抽出します。「システムモデル設定」で指定されたチャットモデルによって追加のトークンが消費されることに注意してください。チャンクリストから追加されたキーワードを確認または更新することができます。`,
       autoQuestions: '自動質問',
-      autoQuestionsTip: `ランキングスコアを向上させるために、「システムモデル設定」で定義されたチャットモデルを使用して、ナレッジベースのチャンクごとにN個の質問を抽出します。 これにより、追加のトークンが消費されることに注意してください。 結果はチャンクリストで表示および編集できます。 質問抽出エラーはチャンク処理をブロックしません。空の結果が元のチャンクに追加されます。詳細は https://ragflow.io/docs/dev/autokeyword_autoquestion をご覧ください。`,
+      autoQuestionsTip: `ランキングスコアを向上させるために、「システムモデル設定」で定義されたチャットモデルを使用して、ナレッジベースのチャンクごとにN個の質問を抽出します。これにより、追加のトークンが消費されることに注意してください。結果はチャンクリストで表示および編集できます。質問抽出エラーはチャンク処理をブロックしません。空の結果が元のチャンクに追加されます。`,
     },
     knowledgeConfiguration: {
-      imageTableContextWindow: '画像・表コンテキストウィンドウ',
-      imageTableContextWindowTip:
-        '画像と表の上下のテキストをNトークン取得し、より豊かな背景コンテキストを提供します。',
       titleDescription:
         'ナレッジベースの設定、特にチャンク方法をここで更新してください。',
       name: 'ナレッジベース名',
       photo: 'ナレッジベース写真',
-      photoTip: '4 MB までの画像をアップロードできます。す',
+      photoTip: '4MBのファイルをアップロードできます',
       description: '説明',
       language: '言語',
       languageMessage: '言語を入力してください',
@@ -189,7 +185,7 @@ export default {
       chunkTokenNumber: '推奨チャンクサイズ',
       chunkTokenNumberMessage: 'チャンクトークン数は必須です',
       embeddingModelTip:
-        'ナレッジベースで使用されるデフォルトの埋め込みモデルです。ナレッジベースにチャンクが作成された後に埋め込みモデルを変更する場合、システムは互換性チェックのためにいくつかのチャンクをランダムに抽出し、新しい埋め込みモデルで再エンコードして新旧ベクトルのコサイン類似度を計算します。サンプルの平均類似度が ≥ 0.9 の場合のみ切り替えできます。平均類似度が 0.9 未満の場合は、変更する前にナレッジベース内のすべてのチャンクを削除する必要があります。',
+        'ナレッジベースのデフォルトの埋め込みモデルです。ナレッジベースにチャンクが存在する場合、変更することはできません。別のデフォルト埋め込みモデルに切り替えるには、ナレッジベース内のすべての既存チャンクを削除する必要があります。',
       permissionsTip:
         '「チーム」に設定すると、全てのチームメンバーがナレッジベースを管理できます。',
       chunkTokenNumberTip:
@@ -241,7 +237,7 @@ export default {
       <b>XLSX</b>形式のファイルには、ヘッダーのない2つの
       列が必要です： 1つは質問の列でもう1つは回答の列です
       （質問列が先行）。複数のシートも可能です。
-
+      
     </li>
     <li>
      <b>CSV/TXT</b>形式のファイルは、TABで区切られたUTF-8エンコードである必要があります。
@@ -286,13 +282,12 @@ export default {
     LLMがその量のコンテキスト長を処理できる場合に、ドキュメント全体を要約する必要があるときに適用されます。
     </p>`,
       knowledgeGraph: `<p>対応ファイル形式は<b>DOCX, EXCEL, PPT, IMAGE, PDF, TXT, MD, JSON, EML</b>です。
-
+          
 <p>このアプローチでは、ファイルを'ナイーブ'/'一般'メソッドを使用してチャンクに分割します。ドキュメントをセグメントに分割し、隣接するセグメントを結合してトークン数が'チャンクトークン数'で指定されたしきい値を超えるまで続け、その時点でチャンクが作成されます。</p>
 <p>その後、チャンクはLLMに入力され、ナレッジグラフとマインドマップのエンティティと関係を抽出します。</p>
 <p><b>エンティティタイプ</b>を設定することを忘れないでください。</p>`,
       useRaptor: 'RAPTORを使用して検索を強化',
-      useRaptorTip:
-        'マルチホップ質問応答タスクでRAPTORを有効にしてください。詳細は https://ragflow.io/docs/dev/enable_raptor をご覧ください。',
+      useRaptorTip: 'マルチホップ質問応答タスクでRAPTORを有効にしてください。',
       prompt: 'プロンプト',
       promptTip:
         'LLMのタスクを説明し、どのように応答すべきかを指定し、他のさまざまな要件を概説するためにシステムプロンプトを使用します。システムプロンプトは、LLMのさまざまなデータ入力として機能するキー（変数）と共に使用されることがよくあります。使用するキーを表示するには、スラッシュ `/` または (x) ボタンを使用します。',
@@ -314,18 +309,7 @@ export default {
       randomSeedMessage: 'ランダムシードは必須です',
       entityTypes: 'エンティティタイプ',
       pageRank: 'ページランク',
-      pageRankTip: `検索時に特定の知識ベースにより高いPageRankスコアを割り当てることができます。対応するスコアは、これらの知識ベースから取得されたチャンクのハイブリッド類似度スコアに加算され、ランキングが向上します。詳細については、https://ragflow.io/docs/dev/set_page_rank を参照してください。`,
-      paddleocrOptions: 'PaddleOCRオプション',
-      paddleocrApiUrl: 'PaddleOCR API URL',
-      paddleocrApiUrlTip: 'PaddleOCRサービスのAPIエンドポイントURL',
-      paddleocrApiUrlPlaceholder: '例: https://paddleocr-server.com/api',
-      paddleocrAccessToken: 'AI Studioアクセストークン',
-      paddleocrAccessTokenTip: 'PaddleOCR APIのアクセストークン（オプション）',
-      paddleocrAccessTokenPlaceholder: 'AI Studioトークン（オプション）',
-      paddleocrAlgorithm: 'PaddleOCRアルゴリズム',
-      paddleocrAlgorithmTip: 'PaddleOCR解析に使用するアルゴリズム',
-      paddleocrSelectAlgorithm: 'アルゴリズムを選択',
-      paddleocrModelNamePlaceholder: '例: paddleocr-from-env-1',
+      pageRankTip: `検索時に特定の知識ベースにより高いPageRankスコアを割り当てることができます。対応するスコアは、これらの知識ベースから取得されたチャンクのハイブリッド類似度スコアに加算され、ランキングが向上します。`,
     },
     chunk: {
       chunk: 'チャンク',
@@ -393,7 +377,7 @@ export default {
       topN: 'トップN',
       topNTip: `類似度スコアがしきい値を超えるチャンクのうち、上位N件のみがLLMに供給されます。`,
       variable: '変数',
-      variableTip: `RAGFlowのチャットアシスタント管理APIと組み合わせて使用することで、変数はより柔軟なシステムプロンプト戦略を開発するのに役立ちます。定義された変数は、LLMのプロンプトの一部として「システムプロンプト」で使用されます。{knowledge}は、指定された知識ベースから取得された部分を表す特別な予約変数であり、「システムプロンプト」ではすべての変数を波括弧{}で囲む必要があります。詳細はhttps://ragflow.io/docs/dev/set_chat_variablesを参照してください。`,
+      variableTip: `チャットアシスタント管理APIと組み合わせて使用することで、変数はより柔軟なシステムプロンプト戦略を開発するのに役立ちます。定義された変数は、LLMのプロンプトの一部として「システムプロンプト」で使用されます。{knowledge}は、指定された知識ベースから取得された部分を表す特別な予約変数であり、「システムプロンプト」ではすべての変数を波括弧{}で囲む必要があります。`,
       add: '追加',
       key: 'キー',
       optional: 'オプション',
@@ -428,7 +412,8 @@ export default {
         '存在ペナルティと同様に、モデルが同じ単語を頻繁に繰り返す傾向を減少させます。',
       maxTokens: '最大トークン数',
       maxTokensMessage: '最大トークン数は必須です',
-      maxTokensTip: `モデルの最大コンテキストサイズ。無効または不正な値はエラーになります。デフォルトは512。`,
+      maxTokensTip:
+        'これは、モデルの出力の最大長を設定します。トークン（単語または単語の一部）の数で測定されます。',
       maxTokensInvalidMessage: '最大トークン数に有効な数値を入力してください。',
       maxTokensMinMessage: '最大トークン数は0以上でなければなりません。',
       quote: '引用を表示',
@@ -461,7 +446,7 @@ export default {
       partialTitle: '部分埋め込み',
       extensionTitle: 'Chrome拡張機能',
       tokenError: 'まずAPIトークンを作成してください！',
-      betaError: 'システム設定ページからRAGFlow APIキーを取得してください。',
+      betaError: 'システム設定ページからシステムAPIキーを取得してください。',
       searching: '検索中...',
       parsing: '解析中',
       uploading: 'アップロード中',
@@ -505,7 +490,7 @@ export default {
       addCondition: '条件を追加',
       meta: {
         disabled: '無効',
-        auto: '自動',
+        automatic: '自動',
         manual: '手動',
       },
       cancel: 'キャンセル',
@@ -517,7 +502,8 @@ export default {
       profileDescription: 'ここで写真と個人情報を更新してください。',
       maxTokens: '最大トークン数',
       maxTokensMessage: '最大トークン数は必須です',
-      maxTokensTip: `モデルの最大コンテキストサイズ。無効または不正な値はエラーになります。デフォルトは512。`,
+      maxTokensTip:
+        'これは、モデルの出力の最大長を設定します。トークン（単語または単語の一部）の数で測定されます。',
       maxTokensInvalidMessage: '有効な数値を入力してください。',
       maxTokensMinMessage: '最大トークン数は0以上でなければなりません。',
       password: 'パスワード',
@@ -570,10 +556,6 @@ export default {
       tongyiBaseUrlTip:
         '中国ユーザーの場合、記入不要または https://dashscope.aliyuncs.com/compatible-mode/v1 を使用してください。国際ユーザーは https://dashscope-intl.aliyuncs.com/compatible-mode/v1 を使用してください',
       tongyiBaseUrlPlaceholder: '（国際ユーザーのみ、ヒントをご覧ください）',
-      minimaxBaseUrlTip:
-        '国際ユーザーのみ：https://api.minimax.io/v1 を使用してください。',
-      minimaxBaseUrlPlaceholder:
-        '（国際ユーザーのみ、https://api.minimax.io/v1 を入力してください）',
       modify: '変更',
       systemModelSettings: 'デフォルトモデルを設定する',
       chatModel: 'チャットモデル',
@@ -581,18 +563,18 @@ export default {
         '新しく作成されたナレッジベースが使用するデフォルトのチャットLLM。',
       embeddingModel: '埋め込みモデル',
       embeddingModelTip:
-        '新しく作成された各ナレッジベースのデフォルト埋め込みモデルです。ドロップダウンから埋め込みモデルが見つからない場合は、RAGFlowスリムエディション（埋め込みモデルを含まない）を使用しているか、https://ragflow.io/docs/dev/supported_models を確認して、モデルプロバイダーがこのモデルをサポートしているかどうかを確認してください。',
+        '新しく作成された各ナレッジベースのデフォルト埋め込みモデルです。ドロップダウンから埋め込みモデルが見つからない場合は、モデルプロバイダーの設定をご確認ください。',
       img2txtModel: '画像からテキストへのモデル',
       img2txtModelTip:
-        '新しく作成された知識ベースごとのデフォルトのimg2txtモデル。それは画像や動画を説明します。ドロップダウンからモデルが見つからない場合は、https://ragflow.io/docs/dev/supported_models を確認して、モデルプロバイダーがこのモデルをサポートしているかどうかを確認してください。',
+        '新しく作成された知識ベースごとのデフォルトのimg2txtモデル。それは画像や動画を説明します。ドロップダウンからモデルが見つからない場合は、モデルプロバイダーの設定をご確認ください。',
       sequence2txtModel: 'シーケンスからテキストへのモデル',
       sequence2txtModelTip:
-        '新しく作成されたナレッジベースが使用するデフォルトのASRモデル。音声を対応するテキストに変換するために使用します。ドロップダウンからモデルが見つからない場合は、https://ragflow.io/docs/dev/supported_models を確認して、モデルプロバイダーがこのモデルをサポートしているかどうかを確認してください。',
+        '新しく作成されたナレッジベースが使用するデフォルトのASRモデル。音声を対応するテキストに変換するために使用します。ドロップダウンからモデルが見つからない場合は、モデルプロバイダーの設定をご確認ください。',
       rerankModel: '再ランクモデル',
-      rerankModelTip: `チャンクをrerankingするためのデフォルトのrerankモデル。ドロップダウンからモデルが見つからない場合は、https://ragflow.io/docs/dev/supported_models を確認して、ご使用のモデルプロバイダーがこのモデルをサポートしているかをご確認ください。`,
+      rerankModelTip: `チャンクをrerankingするためのデフォルトのrerankモデル。ドロップダウンからモデルが見つからない場合は、モデルプロバイダーの設定をご確認ください。`,
       ttsModel: 'TTSモデル',
       ttsModelTip:
-        'デフォルトのtext-to-speechモデル。ドロップダウンからモデルが見つからない場合は、https://ragflow.io/docs/dev/supported_models を確認して、ご使用のモデルプロバイダーがこのモデルをサポートしているかをご確認ください。',
+        'デフォルトのtext-to-speechモデル。ドロップダウンからモデルが見つからない場合は、モデルプロバイダーの設定をご確認ください。',
       workspace: 'ワークスペース',
       upgrade: 'アップグレード',
       addLlmTitle: 'LLMを追加',
@@ -606,17 +588,6 @@ export default {
       modelTypeMessage: 'モデルタイプを入力してください！',
       addLlmBaseUrl: 'ベースURL',
       baseUrlNameMessage: 'ベースURLを入力してください！',
-      paddleocr: {
-        apiUrl: 'PaddleOCR API URL',
-        apiUrlPlaceholder: '例：https://paddleocr-server.com/layout-parsing',
-        accessToken: 'AI Studio アクセストークン',
-        accessTokenPlaceholder: 'AI Studio のトークン（任意）',
-        algorithm: 'PaddleOCR アルゴリズム',
-        selectAlgorithm: 'アルゴリズムを選択',
-        modelNamePlaceholder: '例：paddleocr-from-env-1',
-        modelNameRequired: 'モデル名は必須です',
-        apiUrlRequired: 'PaddleOCR API URL は必須です',
-      },
       vision: 'ビジョンをサポートしていますか？',
       ollamaLink: '{{name}}を統合する方法',
       FishAudioLink: 'FishAudioの使用方法',
@@ -640,6 +611,10 @@ export default {
       'eu-central-1': 'ヨーロッパ（フランクフルト）',
       'us-gov-west-1': 'AWS GovCloud（米国西部）',
       'ap-southeast-2': 'アジア太平洋（シドニー）',
+      addHunyuanSID: 'HunyuanシークレットID',
+      HunyuanSIDMessage: 'シークレットIDを入力してください',
+      addHunyuanSK: 'Hunyuanシークレットキー',
+      HunyuanSKMessage: 'シークレットキーを入力してください',
       addTencentCloudSID: 'TencentCloudシークレットID',
       TencentCloudSIDMessage: 'シークレットIDを入力してください',
       addTencentCloudSK: 'TencentCloudシークレットキー',
@@ -739,13 +714,12 @@ export default {
       directory: 'ディレクトリ',
       uploadTitle: 'クリックまたはドラッグしてファイルをアップロード',
       uploadDescription:
-        'RAGFlowは、単一またはバッチでのファイルアップロードをサポートします。ローカルにデプロイされた RAGFlow の場合: アップロードごとの合計ファイルサイズ制限は 1GB、バッチアップロードの制限は 32 ファイルです。アカウントごとのファイル総数には制限がありません。demo.ragflow.io の場合: アップロードごとの合計ファイルサイズ制限は 10MB、各ファイルは 10MB を超えず、アカウントごとに最大 128 ファイルまでです。',
+        '単一または一括のファイルアップロードに対応しています。',
       local: 'ローカルアップロード',
       s3: 'S3アップロード',
       preview: 'プレビュー',
       fileError: 'ファイルエラー',
-      uploadLimit:
-        'RAGFlowは、単一またはバッチでのファイルアップロードをサポートします。ローカルにデプロイされた RAGFlow の場合: アップロードごとの合計ファイルサイズ制限は 1GB、バッチアップロードの制限は 32 ファイルです。アカウントごとのファイル総数には制限がありません。demo.ragflow.io の場合: アップロードごとの合計ファイルサイズ制限は 10MB、各ファイルは 10MB を超えず、アカウントごとに最大 128 ファイルまでです。',
+      uploadLimit: '単一または一括のファイルアップロードに対応しています。',
       destinationFolder: '保存先フォルダ',
     },
     flow: {
@@ -815,27 +789,11 @@ export default {
       searXNG: 'SearXNG',
       searXNGDescription:
         'SearXNGのインスタンスURLを提供して検索を行うコンポーネント。TopNとインスタンスURLを指定してください。',
-      pdfGenerator: 'ドキュメント生成',
-      pDFGenerator: 'ドキュメント生成',
-      pdfGeneratorDescription: `マークダウン形式のコンテンツからドキュメント（PDF、DOCX、TXT）を生成するコンポーネント。カスタムスタイル、画像、テーブルをサポート。サポート：**太字**、*斜体*、# 見出し、- リスト、| 構文のテーブル。`,
-      pDFGeneratorDescription: `マークダウン形式のコンテンツからドキュメント（PDF、DOCX、TXT）を生成するコンポーネント。カスタムスタイル、画像、テーブルをサポート。サポート：**太字**、*斜体*、# 見出し、- リスト、| 構文のテーブル。`,
-      subtitle: 'サブタイトル',
-      logoImage: 'ロゴ画像',
-      logoPosition: 'ロゴ位置',
-      logoWidth: 'ロゴ幅',
-      logoHeight: 'ロゴ高さ',
-      fontFamily: 'フォントファミリー',
-      fontSize: 'フォントサイズ',
-      titleFontSize: 'タイトルフォントサイズ',
-      pageSize: 'ページサイズ',
-      orientation: '向き',
-      marginTop: '上余白',
-      marginBottom: '下余白',
-      filename: 'ファイル名',
-      outputDirectory: '出力ディレクトリ',
-      addPageNumbers: 'ページ番号を追加',
-      addTimestamp: 'タイムスタンプを追加',
-      watermarkText: '透かしテキスト',
+      channel: 'チャンネル',
+      channelTip: `コンポーネントの入力に対してテキスト検索またはニュース検索を実行します`,
+      text: 'テキスト',
+      news: 'ニュース',
+      messageHistoryWindowSize: 'メッセージウィンドウサイズ',
       messageHistoryWindowSizeTip:
         'LLMに表示される会話履歴のウィンドウサイズ。大きいほど良いですが、LLMの最大トークン制限に注意してください。',
       wikipedia: 'Wikipedia',
@@ -876,7 +834,7 @@ export default {
       targetLang: 'ターゲット言語',
       gitHub: 'GitHub',
       githubDescription:
-        'このコンポーネントは、https://github.com/ からリポジトリを検索するために使用されます。Top Nは、調整する検索結果の数を指定します。',
+        'このコンポーネントは、リポジトリを検索するために使用されます。Top Nは、検索結果の数を指定します。',
       baiduFanyi: 'BaiduFanyi',
       baiduFanyiDescription:
         'このコンポーネントは、https://fanyi.baidu.com/ から翻訳を取得するために使用されます。通常、より専門的な翻訳結果を提供します。',

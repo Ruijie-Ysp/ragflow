@@ -109,7 +109,14 @@ async def create() -> Response:
         if err_message:
             return get_data_error_result(err_message)
 
+        # Check if we got tools for this server
+        if server_name not in server_tools:
+            return get_data_error_result(f"Failed to retrieve tools from MCP server '{server_name}'")
+
         tools = server_tools[server_name]
+        if not tools:
+            return get_data_error_result(f"No tools available from MCP server '{server_name}'. Please check if the server is running correctly.")
+
         tools = {tool["name"]: tool for tool in tools if isinstance(tool, dict) and "name" in tool}
         variables["tools"] = tools
         req["variables"] = variables
@@ -161,7 +168,14 @@ async def update() -> Response:
         if err_message:
             return get_data_error_result(err_message)
 
+        # Check if we got tools for this server
+        if server_name not in server_tools:
+            return get_data_error_result(f"Failed to retrieve tools from MCP server '{server_name}'")
+
         tools = server_tools[server_name]
+        if not tools:
+            return get_data_error_result(f"No tools available from MCP server '{server_name}'. Please check if the server is running correctly.")
+
         tools = {tool["name"]: tool for tool in tools if isinstance(tool, dict) and "name" in tool}
         variables["tools"] = tools
         req["variables"] = variables
@@ -246,7 +260,16 @@ async def import_multiple() -> Response:
                 results.append({"server": base_name, "success": False, "message": err_message})
                 continue
 
+            # Check if we got tools for this server
+            if new_name not in server_tools:
+                results.append({"server": base_name, "success": False, "message": f"Failed to retrieve tools from MCP server '{new_name}'"})
+                continue
+
             tools = server_tools[new_name]
+            if not tools:
+                results.append({"server": base_name, "success": False, "message": f"No tools available from MCP server '{new_name}'"})
+                continue
+
             tools = {tool["name"]: tool for tool in tools if isinstance(tool, dict) and "name" in tool}
             create_data["variables"]["tools"] = tools
 

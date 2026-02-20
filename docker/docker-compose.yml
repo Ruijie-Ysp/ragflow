@@ -2,12 +2,10 @@ include:
   - ./docker-compose-base.yml
 # To ensure that the container processes the locally modified `service_conf.yaml.template` instead of the one included in its image, you need to mount the local `service_conf.yaml.template` to the container.
 services:
-  ragflow-cpu:
+  ragflow:
     depends_on:
       mysql:
         condition: service_healthy
-    profiles:
-      - cpu
     image: ${RAGFLOW_IMAGE}
     # Example configuration to set up an MCP server:
     # command:
@@ -25,108 +23,126 @@ services:
     #   - --no-transport-streamable-http-enabled #  Disable Streamable HTTP transport (/mcp endpoint)
     #   - --no-json-response # Disable JSON response mode in Streamable HTTP transport (instead of SSE over HTTP)
 
-    # Example configuration to start Admin server:
-    command:
-      - --enable-adminserver
-    ports:
-      - ${SVR_WEB_HTTP_PORT}:80
-      - ${SVR_WEB_HTTPS_PORT}:443
-      - ${SVR_HTTP_PORT}:9380
-      - ${ADMIN_SVR_HTTP_PORT}:9381
-      - ${SVR_MCP_PORT}:9382 # entry for MCP (host_port:docker_port). The docker_port must match the value you set for `mcp-port` above.
-    volumes:
-      - ./ragflow-logs:/ragflow/logs
-      - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
-      - ./nginx/proxy.conf:/etc/nginx/proxy.conf
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template
-      - ./entrypoint.sh:/ragflow/entrypoint.sh
-    env_file: .env
-    networks:
-      - ragflow
-    restart: unless-stopped
-    # https://docs.docker.com/engine/daemon/prometheus/#create-a-prometheus-configuration
-    # If you use Docker Desktop, the --add-host flag is optional. This flag ensures that the host's internal IP is exposed to the Prometheus container.
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  ragflow-gpu:
-    depends_on:
-      mysql:
-        condition: service_healthy
-    profiles:
-      - gpu
-    image: ${RAGFLOW_IMAGE}
-    # Example configuration to set up an MCP server:
+    # Example configration to start Admin server:
     # command:
-    #   - --enable-mcpserver
-    #   - --mcp-host=0.0.0.0
-    #   - --mcp-port=9382
-    #   - --mcp-base-url=http://127.0.0.1:9380
-    #   - --mcp-script-path=/ragflow/mcp/server/server.py
-    #   - --mcp-mode=self-host
-    #   - --mcp-host-api-key=ragflow-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Optional transport flags for MCP (customize if needed).
-    # Host mode need to combined with --no-transport-streamable-http-enabled flag, namely, host+streamable-http is not supported yet.
-    # The following are enabled by default unless explicitly disabled with --no-<flag>.
-    #   - --no-transport-sse-enabled # Disable legacy SSE endpoints (/sse and /messages/)
-    #   - --no-transport-streamable-http-enabled #  Disable Streamable HTTP transport (/mcp endpoint)
-    #   - --no-json-response # Disable JSON response mode in Streamable HTTP transport (instead of SSE over HTTP)
-
-    # Example configuration to start Admin server:
-    command:
-      - --enable-adminserver
+    #   - --enable-adminserver
+    container_name: ragflow-server
     ports:
-      - ${SVR_WEB_HTTP_PORT}:80
-      - ${SVR_WEB_HTTPS_PORT}:443
       - ${SVR_HTTP_PORT}:9380
       - ${ADMIN_SVR_HTTP_PORT}:9381
-      - ${SVR_MCP_PORT}:9382 # entry for MCP (host_port:docker_port). The docker_port must match the value you set for `mcp-port` above.
+      - 80:80
+      - 443:443
+      - 5678:5678
+      - 5679:5679
+      - 9382:9382 # entry for MCP (host_port:docker_port). The docker_port must match the value you set for `mcp-port` above.
     volumes:
       - ./ragflow-logs:/ragflow/logs
       - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
       - ./nginx/proxy.conf:/etc/nginx/proxy.conf
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      #- ../history_data_agent:/ragflow/history_data_agent
       - ./service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template
+      - ./local.service_conf.yaml:/ragflow/conf/local.service_conf.yaml
       - ./entrypoint.sh:/ragflow/entrypoint.sh
+      #- ../api/apps/__init__.py:/ragflow/api/apps/__init__.py
+      # Mount modified MCP files for bug fixes
+      ##- ../api/utils/api_utils.py:/ragflow/api/utils/api_utils.py
+      #- ../api/apps/mcp_server_app.py:/ragflow/api/apps/mcp_server_app.py
+      #- ../rag/utils/mcp_tool_call_conn.py:/ragflow/rag/utils/mcp_tool_call_conn.py
+      # Langfuse v3 migration files are now built into the image
+      # For development with live code updates, use docker-compose-dev.yml instead
+
+      # 向量数据展示功能 - 后端 API 文件
+      - ../api/apps/api_app.py:/ragflow/api/apps/api_app.py
+      - ../api/apps/chunk_app.py:/ragflow/api/apps/chunk_app.py
+
+      # 向量数据展示功能 - 前端文件（前端已编译到镜像中，不需要挂载）
+      #- ../web/src/hooks/use-vector-metadata.ts:/ragflow/web/src/hooks/use-vector-metadata.ts
+      #- ../web/src/components/vector-metadata-panel.tsx:/ragflow/web/src/components/vector-metadata-panel.tsx
+      #- ../web/src/components/vector-statistics-summary.tsx:/ragflow/web/src/components/vector-statistics-summary.tsx
+      #- ../web/src/pages/add-knowledge/components/knowledge-chunk/components/vector-modal:/ragflow/web/src/pages/add-knowledge/components/knowledge-chunk/components/vector-modal
+      #- ../web/src/pages/add-knowledge/components/knowledge-chunk/components/chunk-toolbar/index.tsx:/ragflow/web/src/pages/add-knowledge/components/knowledge-chunk/components/chunk-toolbar/index.tsx
+
     env_file: .env
+    environment:
+      - TZ=${TIMEZONE}
+      - HF_ENDPOINT=${HF_ENDPOINT-}
+      - MACOS=${MACOS-}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED}
     networks:
       - ragflow
-    restart: unless-stopped
+    restart: on-failure
     # https://docs.docker.com/engine/daemon/prometheus/#create-a-prometheus-configuration
     # If you use Docker Desktop, the --add-host flag is optional. This flag ensures that the host's internal IP is exposed to the Prometheus container.
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-
   # executor:
+  ragflow-proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.proxy
+      args:
+        PYTHON_BASE: ${PYTHON_BASE_IMAGE-python:3.9-slim}
+    image: ragflow-openai-proxy:latest
+    container_name: ragflow-openai-proxy
+    depends_on:
+      ragflow:
+        condition: service_started
+    ports:
+      - ${PROXY_PORT}:8000
+    env_file: .env
+    environment:
+      - RAGFLOW_BASE_URL=http://ragflow:80
+      - RAGFLOW_API_KEY=${RAGFLOW_API_KEY}
+      - TZ=${TIMEZONE}
+    networks:
+      - ragflow
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
   #   depends_on:
   #     mysql:
   #       condition: service_healthy
   #   image: ${RAGFLOW_IMAGE}
+  #   container_name: ragflow-executor
   #   volumes:
   #     - ./ragflow-logs:/ragflow/logs
   #     - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
   #   env_file: .env
+  #   environment:
+  #     - TZ=${TIMEZONE}
+  #     - HF_ENDPOINT=${HF_ENDPOINT}
+  #     - MACOS=${MACOS}
   #   entrypoint: "/ragflow/entrypoint_task_executor.sh 1 3"
   #   networks:
   #     - ragflow
-  #   restart: unless-stopped
+  #   restart: on-failure
   #   # https://docs.docker.com/engine/daemon/prometheus/#create-a-prometheus-configuration
   #   # If you're using Docker Desktop, the --add-host flag is optional. This flag makes sure that the host's internal IP gets exposed to the Prometheus container.
   #   extra_hosts:
   #     - "host.docker.internal:host-gateway"
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu]
+  #executor:
+  #  depends_on:
+  #    mysql:
+  #      condition: service_healthy
+  #  image: ${RAGFLOW_IMAGE}
+  #  container_name: ragflow-executor
+  #  volumes:
+  #    - ./ragflow-logs:/ragflow/logs
+  #    - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
+  #    - ./local.service_conf.yaml:/ragflow/conf/local.service_conf.yaml
+  #  env_file: .env
+  #  environment:
+  #    - TZ=${TIMEZONE}
+  #    - HF_ENDPOINT=${HF_ENDPOINT-}
+  #    - MACOS=${MACOS-}
+  #  command: ["--disable-webserver", "--workers=2"]
+  #  networks:
+  #    - ragflow
+  #  restart: on-failure
+  #  extra_hosts:
+  #    - "host.docker.internal:host-gateway"

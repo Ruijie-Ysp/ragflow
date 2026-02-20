@@ -1,0 +1,42 @@
+# 基于旧镜像的增量更新
+FROM ragflow:v0.21-mineru-2
+
+# 复制更新的前端构建文件
+COPY web/dist/ /ragflow/web/dist/
+
+# 复制更新的后端 API 文件
+COPY api/apps/literature_app.py /ragflow/api/apps/
+COPY api/db/services/literature_service.py /ragflow/api/db/services/
+
+# 复制更新的数据库模型（添加 parse_method 字段）
+COPY api/db/db_models.py /ragflow/api/db/
+
+# 复制更新的 MinerU 客户端
+COPY api/utils/mineru_client.py /ragflow/api/utils/
+
+# 复制更新的 hooks
+COPY web/src/hooks/use-literature-request.ts /ragflow/web/src/hooks/
+
+# 复制更新的翻译文件
+COPY web/src/locales/zh.ts /ragflow/web/src/locales/
+COPY web/src/locales/en.ts /ragflow/web/src/locales/
+
+# 复制更新的前端源码
+COPY web/src/pages/literature/ /ragflow/web/src/pages/literature/
+COPY web/src/pages/literatures/ /ragflow/web/src/pages/literatures/
+
+# 复制更新的 UI 组件（修复 ScrollArea 宽度问题）
+COPY web/src/components/ui/scroll-area.tsx /ragflow/web/src/components/ui/
+
+# 复制更新的 TypeScript 接口定义
+COPY web/src/interfaces/database/literature.ts /ragflow/web/src/interfaces/database/
+
+# 复制更新的前端服务
+COPY web/src/services/literature-service.ts /ragflow/web/src/services/
+
+# 复制更新的 API 路由定义
+COPY web/src/utils/api.ts /ragflow/web/src/utils/
+
+# 清理 Python 缓存
+RUN find /ragflow -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+

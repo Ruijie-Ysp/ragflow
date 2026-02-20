@@ -1,0 +1,49 @@
+RAGFlow 修改代码文件清单
+备份时间: 20251022-170722
+================================================================================
+
+API 层（3个文件）:
+  ✓ api/apps/langfuse_app.py
+  ✓ api/db/services/llm_service.py
+  ✓ api/db/services/tenant_llm_service.py
+
+RAG 层 - LLM（1个文件）:
+  ✓ rag/llm/chat_model.py
+
+RAG 层 - Utils（1个文件）:
+  ✓ rag/utils/__init__.py
+
+RAG 层 - Prompts（2个文件）:
+  ✓ rag/prompts/generator.py
+  ✓ rag/prompts/template.py
+
+RAG 层 - Flow（3个文件）:
+  ✓ rag/flow/parser/parser.py
+  ✓ rag/flow/chunker/chunker.py
+  ✓ rag/flow/tokenizer/tokenizer.py
+
+Agent 层（5个文件）:
+  ✓ agent/canvas.py
+  ✓ agent/component/llm.py
+  ✓ agent/component/categorize.py
+  ✓ agent/component/agent_with_tools.py
+  ✓ agent/tools/retrieval.py
+
+Proxy 服务（3个文件）:
+  ✓ ragflow_openai_proxy.py
+  ✓ requirements_proxy.txt
+  ✓ docker/Dockerfile.proxy
+
+================================================================================
+总计: 18 个文件（15个修改 + 3个新增）
+================================================================================
+
+使用说明:
+1. 这些文件是从当前 RAGFlow 项目中备份的修改版本
+2. 在 RAGFlow 更新到新版本后，使用这些文件来迁移修改
+3. 详细的迁移步骤请参考 README.md
+
+相关文件:
+- README.md              # 详细的迁移指南
+- FILE_LIST.txt          # 本文件，文件清单
+- restore_codes.sh       # 恢复脚本（待创建）

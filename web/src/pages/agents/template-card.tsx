@@ -28,7 +28,7 @@ export function TemplateCard({ data, showModal }: IProps) {
         <div className="flex justify-start items-center gap-4 mb-4">
           <RAGFlowAvatar
             className="w-7 h-7"
-            avatar={data.avatar ? data.avatar : 'https://github.com/shadcn.png'}
+            avatar={data.avatar ? data.avatar : '/wjj-small.png'}
             name={data?.title[language] || 'CN'}
           ></RAGFlowAvatar>
           <div

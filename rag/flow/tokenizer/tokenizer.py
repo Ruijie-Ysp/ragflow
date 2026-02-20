@@ -59,7 +59,7 @@ class Tokenizer(ProcessBase):
         else:
             e, ten = TenantService.get_by_id(self._canvas._tenant_id)
             embedding_id = ten.embd_id
-        embedding_model = LLMBundle(self._canvas._tenant_id, LLMType.EMBEDDING, llm_name=embedding_id)
+        embedding_model = LLMBundle(self._canvas._tenant_id, LLMType.EMBEDDING, llm_name=embedding_id, agent_id=self._canvas.get_agent_id())
         texts = []
         for c in chunks:
             txt = ""

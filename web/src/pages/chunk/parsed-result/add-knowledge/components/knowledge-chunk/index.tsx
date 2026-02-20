@@ -246,6 +246,7 @@ const Chunk = () => {
                   available={available}
                   selectAllChunk={selectAllChunk}
                   handleSetAvailable={handleSetAvailable}
+                  documentId={documentId}
                 />
                 <div className="pt-[5px] pb-[5px]">
                   <CheckboxSets

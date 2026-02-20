@@ -92,7 +92,7 @@ export default function SearchingView({
             setIsSearching?.(false);
           }}
         >
-          RAGFlow
+          知识库和智能体管理系统
         </h1>
         <div
           className={cn(

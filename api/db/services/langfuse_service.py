@@ -57,12 +57,14 @@ class TenantLangfuseService(CommonService):
         return cls.model.delete().where(cls.model.tenant_id == tenant_id).execute()
 
     @classmethod
+    @DB.connection_context()
     def update_by_tenant(cls, tenant_id, langfuse_keys):
         langfuse_keys["update_time"] = current_timestamp()
         langfuse_keys["update_date"] = datetime_format(datetime.now())
         return cls.model.update(**langfuse_keys).where(cls.model.tenant_id == tenant_id).execute()
 
     @classmethod
+    @DB.connection_context()
     def save(cls, **kwargs):
         current_ts = current_timestamp()
         current_date = datetime_format(datetime.now())

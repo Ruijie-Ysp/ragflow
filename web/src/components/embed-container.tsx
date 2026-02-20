@@ -19,9 +19,9 @@ export function EmbedContainer({
   const appConf = useFetchAppConf();
 
   return (
-    <section className="h-[100vh] flex justify-center items-center">
+    <section className="h-[100vh] flex justify-center items-center relative">
       <div className="w-40 flex gap-2 absolute left-3 top-12 items-center">
-        <img src="/logo.svg" alt="" />
+        <img src="/brand.png" alt="logo" className="w-8 h-8 object-contain" />
         <span className="text-2xl font-bold">{appConf.appName}</span>
       </div>
       <div className=" w-[80vw] border rounded-lg">

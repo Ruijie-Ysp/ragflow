@@ -288,18 +288,6 @@ function EmbedDialog({
             <span>{token} </span>
             <CopyToClipboard text={token}></CopyToClipboard>
           </div>
-          <a
-            className="cursor-pointer text-accent-primary inline-block"
-            href={
-              isAgent
-                ? 'https://ragflow.io/docs/dev/http_api_reference#create-session-with-agent'
-                : 'https://ragflow.io/docs/dev/http_api_reference#create-session-with-chat-assistant'
-            }
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t('howUseId', { keyPrefix: isAgent ? 'flow' : 'chat' })}
-          </a>
         </section>
       </DialogContent>
     </Dialog>
