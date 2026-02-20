@@ -3,6 +3,7 @@ import { KnowledgeRouteKey } from '@/constants/knowledge';
 import { IChunkListResult, useSelectChunkList } from '@/hooks/chunk-hooks';
 import { useTranslate } from '@/hooks/common-hooks';
 import { useKnowledgeBaseId } from '@/hooks/knowledge-hooks';
+import VectorModal from '@/pages/add-knowledge/components/knowledge-chunk/components/vector-modal';
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -10,6 +11,7 @@ import {
   DeleteOutlined,
   DownOutlined,
   FilePdfOutlined,
+  FunctionOutlined,
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
@@ -63,6 +65,7 @@ const ChunkToolBar = ({
   const documentInfo = data?.documentInfo;
   const knowledgeBaseId = useKnowledgeBaseId();
   const [isShowSearchBox, setIsShowSearchBox] = useState(false);
+  const [vectorModalVisible, setVectorModalVisible] = useState(false);
   const { t } = useTranslate('chunk');
 
   const handleSelectAllCheck = useCallback(
@@ -165,56 +168,71 @@ const ChunkToolBar = ({
   );
 
   return (
-    <Flex justify="space-between" align="center">
-      <Space size={'middle'}>
-        <Link
-          to={`/knowledge/${KnowledgeRouteKey.Dataset}?id=${knowledgeBaseId}`}
-        >
-          <ArrowLeftOutlined />
-        </Link>
-        <FilePdfOutlined />
-        <Text ellipsis={{ tooltip: documentInfo?.name }} style={{ width: 150 }}>
-          {documentInfo?.name}
-        </Text>
-      </Space>
-      <Space>
-        <Segmented
-          options={[
-            { label: t(ChunkTextMode.Full), value: ChunkTextMode.Full },
-            { label: t(ChunkTextMode.Ellipse), value: ChunkTextMode.Ellipse },
-          ]}
-          onChange={changeChunkTextMode as SegmentedProps['onChange']}
-        />
-        <Popover content={content} placement="bottom" arrow={false}>
-          <Button>
-            {t('bulk')}
-            <DownOutlined />
-          </Button>
-        </Popover>
-        {isShowSearchBox ? (
-          <Input
-            size="middle"
-            placeholder={t('search')}
-            prefix={<SearchOutlined />}
-            allowClear
-            onChange={handleInputChange}
-            onBlur={handleSearchBlur}
-            value={searchString}
+    <>
+      <Flex justify="space-between" align="center">
+        <Space size={'middle'}>
+          <Link
+            to={`/knowledge/${KnowledgeRouteKey.Dataset}?id=${knowledgeBaseId}`}
+          >
+            <ArrowLeftOutlined />
+          </Link>
+          <FilePdfOutlined />
+          <Text
+            ellipsis={{ tooltip: documentInfo?.name }}
+            style={{ width: 150 }}
+          >
+            {documentInfo?.name}
+          </Text>
+        </Space>
+        <Space>
+          <Segmented
+            options={[
+              { label: t(ChunkTextMode.Full), value: ChunkTextMode.Full },
+              { label: t(ChunkTextMode.Ellipse), value: ChunkTextMode.Ellipse },
+            ]}
+            onChange={changeChunkTextMode as SegmentedProps['onChange']}
           />
-        ) : (
-          <Button icon={<SearchOutlined />} onClick={handleSearchIconClick} />
-        )}
+          <Popover content={content} placement="bottom" arrow={false}>
+            <Button>
+              {t('bulk')}
+              <DownOutlined />
+            </Button>
+          </Popover>
+          {isShowSearchBox ? (
+            <Input
+              size="middle"
+              placeholder={t('search')}
+              prefix={<SearchOutlined />}
+              allowClear
+              onChange={handleInputChange}
+              onBlur={handleSearchBlur}
+              value={searchString}
+            />
+          ) : (
+            <Button icon={<SearchOutlined />} onClick={handleSearchIconClick} />
+          )}
 
-        <Popover content={filterContent} placement="bottom" arrow={false}>
-          <Button icon={<FilterIcon />} />
-        </Popover>
-        <Button
-          icon={<PlusOutlined />}
-          type="primary"
-          onClick={() => createChunk()}
-        />
-      </Space>
-    </Flex>
+          <Popover content={filterContent} placement="bottom" arrow={false}>
+            <Button icon={<FilterIcon />} />
+          </Popover>
+          <Button
+            icon={<FunctionOutlined />}
+            onClick={() => setVectorModalVisible(true)}
+            title="查看向量数据"
+          />
+          <Button
+            icon={<PlusOutlined />}
+            type="primary"
+            onClick={() => createChunk()}
+          />
+        </Space>
+      </Flex>
+      <VectorModal
+        visible={vectorModalVisible}
+        onCancel={() => setVectorModalVisible(false)}
+        documentId={documentInfo?.id || ''}
+      />
+    </>
   );
 };
 

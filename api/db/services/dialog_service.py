@@ -17,6 +17,7 @@ import binascii
 import logging
 import re
 import time
+import os
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -356,12 +357,20 @@ def chat(dialog, messages, stream=True, **kwargs):
     langfuse_tracer = None
     trace_context = {}
     langfuse_keys = TenantLangfuseService.filter_by_tenant(tenant_id=dialog.tenant_id)
-    if langfuse_keys:
-        langfuse = Langfuse(public_key=langfuse_keys.public_key, secret_key=langfuse_keys.secret_key, host=langfuse_keys.host)
-        if langfuse.auth_check():
-            langfuse_tracer = langfuse
-            trace_id = langfuse_tracer.create_trace_id()
-            trace_context = {"trace_id": trace_id}
+
+    disable_otel = str(os.getenv("OTEL_SDK_DISABLED", "false")).lower() in ("true", "1", "yes", "y")
+    if not disable_otel and langfuse_keys:
+        try:
+            langfuse = Langfuse(
+                public_key=langfuse_keys.public_key,
+                secret_key=langfuse_keys.secret_key,
+                host=langfuse_keys.host,
+            )
+            if langfuse.auth_check():
+                langfuse_tracer = langfuse
+                trace_context = {"trace_id": langfuse_tracer.create_trace_id()}
+        except Exception as e:
+            logging.warning(f"Langfuse disabled due to initialization/auth error: {e}")
 
     check_langfuse_tracer_ts = timer()
     kbs, embd_mdl, rerank_mdl, chat_mdl, tts_mdl = get_models(dialog)

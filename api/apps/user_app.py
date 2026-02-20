@@ -137,7 +137,6 @@ def login():
             message="Email and password do not match!",
         )
 
-
 @manager.route("/login/channels", methods=["GET"])  # noqa: F821
 def get_login_channels():
     """
@@ -841,7 +840,7 @@ def set_tenant_info():
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
-        
+
 
 @manager.route("/forget/captcha", methods=["GET"])  # noqa: F821
 def forget_get_captcha():
@@ -934,7 +933,7 @@ def forget_send_otp():
             )
         except Exception:
             return get_json_result(data=False, code=settings.RetCode.SERVER_ERROR, message="failed to send email")
-        
+
     return get_json_result(data=True, code=settings.RetCode.SUCCESS, message="verification passed, email sent")
 
 

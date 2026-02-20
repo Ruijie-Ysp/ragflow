@@ -199,16 +199,16 @@ def question_proposal(chat_mdl, content, topn=3):
     return kwd
 
 
-def full_question(tenant_id=None, llm_id=None, messages=[], language=None, chat_mdl=None):
+def full_question(tenant_id=None, llm_id=None, messages=[], language=None, chat_mdl=None, agent_id=None):
     from api.db import LLMType
     from api.db.services.llm_service import LLMBundle
     from api.db.services.tenant_llm_service import TenantLLMService
 
     if not chat_mdl:
         if TenantLLMService.llm_id2llm_type(llm_id) == "image2text":
-            chat_mdl = LLMBundle(tenant_id, LLMType.IMAGE2TEXT, llm_id)
+            chat_mdl = LLMBundle(tenant_id, LLMType.IMAGE2TEXT, llm_id, agent_id=agent_id)
         else:
-            chat_mdl = LLMBundle(tenant_id, LLMType.CHAT, llm_id)
+            chat_mdl = LLMBundle(tenant_id, LLMType.CHAT, llm_id, agent_id=agent_id)
     conv = []
     for m in messages:
         if m["role"] not in ["user", "assistant"]:
@@ -233,15 +233,15 @@ def full_question(tenant_id=None, llm_id=None, messages=[], language=None, chat_
     return ans if ans.find("**ERROR**") < 0 else messages[-1]["content"]
 
 
-def cross_languages(tenant_id, llm_id, query, languages=[]):
+def cross_languages(tenant_id, llm_id, query, languages=[], agent_id=None):
     from api.db import LLMType
     from api.db.services.llm_service import LLMBundle
     from api.db.services.tenant_llm_service import TenantLLMService
 
     if llm_id and TenantLLMService.llm_id2llm_type(llm_id) == "image2text":
-        chat_mdl = LLMBundle(tenant_id, LLMType.IMAGE2TEXT, llm_id)
+        chat_mdl = LLMBundle(tenant_id, LLMType.IMAGE2TEXT, llm_id, agent_id=agent_id)
     else:
-        chat_mdl = LLMBundle(tenant_id, LLMType.CHAT, llm_id)
+        chat_mdl = LLMBundle(tenant_id, LLMType.CHAT, llm_id, agent_id=agent_id)
 
     rendered_sys_prompt = PROMPT_JINJA_ENV.from_string(CROSS_LANGUAGES_SYS_PROMPT_TEMPLATE).render()
     rendered_user_prompt = PROMPT_JINJA_ENV.from_string(CROSS_LANGUAGES_USER_PROMPT_TEMPLATE).render(query=query, languages=languages)

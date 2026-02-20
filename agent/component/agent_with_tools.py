@@ -91,7 +91,8 @@ class Agent(LLM, ToolBase):
                                   max_retries=self._param.max_retries,
                                   retry_interval=self._param.delay_after_error,
                                   max_rounds=self._param.max_rounds,
-                                  verbose_tool_use=True
+                                  verbose_tool_use=True,
+                                  agent_id=self._canvas.get_agent_id()
                                   )
         self.tool_meta = [v.get_meta() for _,v in self.tools.items()]
 

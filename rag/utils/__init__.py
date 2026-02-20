@@ -109,6 +109,65 @@ def total_token_count_from_response(resp):
     return 0
 
 
+def detailed_usage_from_response(resp):
+    """
+    Extract detailed token usage from LLM response.
+    Returns a dict with input_tokens, output_tokens, and total_tokens.
+    """
+    usage = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+    }
+
+    try:
+        # Try OpenAI format: resp.usage.prompt_tokens, resp.usage.completion_tokens
+        if hasattr(resp, "usage"):
+            if hasattr(resp.usage, "prompt_tokens"):
+                usage["input_tokens"] = resp.usage.prompt_tokens
+            if hasattr(resp.usage, "completion_tokens"):
+                usage["output_tokens"] = resp.usage.completion_tokens
+            if hasattr(resp.usage, "total_tokens"):
+                usage["total_tokens"] = resp.usage.total_tokens
+            else:
+                usage["total_tokens"] = usage["input_tokens"] + usage["output_tokens"]
+            return usage
+    except Exception:
+        pass
+
+    try:
+        # Try usage_metadata format (Gemini/Google models)
+        if hasattr(resp, "usage_metadata"):
+            if hasattr(resp.usage_metadata, "prompt_token_count"):
+                usage["input_tokens"] = resp.usage_metadata.prompt_token_count
+            if hasattr(resp.usage_metadata, "candidates_token_count"):
+                usage["output_tokens"] = resp.usage_metadata.candidates_token_count
+            if hasattr(resp.usage_metadata, "total_token_count"):
+                usage["total_tokens"] = resp.usage_metadata.total_token_count
+            else:
+                usage["total_tokens"] = usage["input_tokens"] + usage["output_tokens"]
+            return usage
+    except Exception:
+        pass
+
+    try:
+        # Try dict format: resp["usage"]["prompt_tokens"], resp["usage"]["completion_tokens"]
+        if 'usage' in resp:
+            if 'prompt_tokens' in resp['usage']:
+                usage["input_tokens"] = resp['usage']['prompt_tokens']
+            if 'completion_tokens' in resp['usage']:
+                usage["output_tokens"] = resp['usage']['completion_tokens']
+            if 'total_tokens' in resp['usage']:
+                usage["total_tokens"] = resp['usage']['total_tokens']
+            else:
+                usage["total_tokens"] = usage["input_tokens"] + usage["output_tokens"]
+            return usage
+    except Exception:
+        pass
+
+    return usage
+
+
 def truncate(string: str, max_len: int) -> str:
     """Returns truncated text if the length of text exceed max_len."""
     return encoder.decode(encoder.encode(string)[:max_len])

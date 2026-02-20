@@ -15,6 +15,7 @@
 #
 import json
 import logging
+import time
 from collections import defaultdict
 from copy import deepcopy
 import json_repair
@@ -23,7 +24,8 @@ import trio
 
 from api.utils import get_uuid
 from graphrag.query_analyze_prompt import PROMPTS
-from graphrag.utils import get_entity_type2samples, get_llm_cache, set_llm_cache, get_relation
+from graphrag.utils import (get_entity_type2samples, get_llm_cache, set_llm_cache, get_relation,
+                            get_query_rewrite_cache, set_query_rewrite_cache, batch_get_relations)
 from rag.utils import num_tokens_from_string, get_float
 from rag.utils.doc_store_conn import OrderByExpr
 
@@ -42,7 +44,18 @@ class KGSearch(Dealer):
         return response
 
     def query_rewrite(self, llm, question, idxnms, kb_ids):
-        ty2ents = trio.run(lambda: get_entity_type2samples(idxnms, kb_ids))
+        """
+        Rewrite query to extract entity types and entities.
+        Uses caching to avoid redundant LLM calls.
+        """
+        # Check cache first
+        cached_result = get_query_rewrite_cache(question, kb_ids)
+        if cached_result:
+            logging.info(f"Query rewrite cache hit for: {question}")
+            return cached_result.get("type_keywords", []), cached_result.get("entities", [])
+
+        # Reduced max_samples from 10000 to 1000 for better performance
+        ty2ents = trio.run(lambda: get_entity_type2samples(idxnms, kb_ids, max_samples=1000))
         hint_prompt = PROMPTS["minirag_query2kwd"].format(query=question,
                                                           TYPE_POOL=json.dumps(ty2ents, ensure_ascii=False, indent=2))
         result = self._chat(llm, hint_prompt, [{"role": "user", "content": "Output:"}], {})
@@ -50,6 +63,13 @@ class KGSearch(Dealer):
             keywords_data = json_repair.loads(result)
             type_keywords = keywords_data.get("answer_type_keywords", [])
             entities_from_query = keywords_data.get("entities_from_query", [])[:5]
+
+            # Cache the result
+            set_query_rewrite_cache(question, kb_ids, {
+                "type_keywords": type_keywords,
+                "entities": entities_from_query
+            })
+
             return type_keywords, entities_from_query
         except json_repair.JSONDecodeError:
             try:
@@ -58,6 +78,13 @@ class KGSearch(Dealer):
                 keywords_data = json_repair.loads(result)
                 type_keywords = keywords_data.get("answer_type_keywords", [])
                 entities_from_query = keywords_data.get("entities_from_query", [])[:5]
+
+                # Cache the result
+                set_query_rewrite_cache(question, kb_ids, {
+                    "type_keywords": type_keywords,
+                    "entities": entities_from_query
+                })
+
                 return type_keywords, entities_from_query
             # Handle parsing error
             except Exception as e:
@@ -150,23 +177,40 @@ class KGSearch(Dealer):
                rel_sim_threshold: float = 0.3,
                   **kwargs
                ):
+        # Performance monitoring
+        start_time = time.time()
+
         qst = question
         filters = self.get_filters({"kb_ids": kb_ids})
         if isinstance(tenant_ids, str):
             tenant_ids = tenant_ids.split(",")
         idxnms = [index_name(tid) for tid in tenant_ids]
         ty_kwds = []
+
+        # Query rewrite with performance tracking
+        rewrite_start = time.time()
         try:
             ty_kwds, ents = self.query_rewrite(llm, qst, [index_name(tid) for tid in tenant_ids], kb_ids)
+            logging.info(f"[KG Performance] Query rewrite took: {time.time() - rewrite_start:.2f}s")
             logging.info(f"Q: {qst}, Types: {ty_kwds}, Entities: {ents}")
         except Exception as e:
             logging.exception(e)
             ents = [qst]
             pass
 
+        # Entity and relation retrieval with performance tracking
+        retrieval_start = time.time()
         ents_from_query = self.get_relevant_ents_by_keywords(ents, filters, idxnms, kb_ids, emb_mdl, ent_sim_threshold)
-        ents_from_types = self.get_relevant_ents_by_types(ty_kwds, filters, idxnms, kb_ids, 10000)
+        logging.info(f"[KG Performance] Entity keyword retrieval took: {time.time() - retrieval_start:.2f}s")
+
+        type_start = time.time()
+        # Reduced from 10000 to 500 for better performance - we only need top entities by pagerank
+        ents_from_types = self.get_relevant_ents_by_types(ty_kwds, filters, idxnms, kb_ids, 500)
+        logging.info(f"[KG Performance] Entity type retrieval took: {time.time() - type_start:.2f}s")
+
+        rel_start = time.time()
         rels_from_txt = self.get_relevant_relations_by_txt(qst, filters, idxnms, kb_ids, emb_mdl, rel_sim_threshold)
+        logging.info(f"[KG Performance] Relation retrieval took: {time.time() - rel_start:.2f}s")
         nhop_pathes = defaultdict(dict)
         for _, ent in ents_from_query.items():
             nhops = ent.get("n_hop_ents", [])
@@ -237,15 +281,21 @@ class KGSearch(Dealer):
                 ents = ents[:-1]
                 break
 
+        # Batch query missing relation descriptions for better performance
+        missing_rels = [(f, t) for (f, t), rel in rels_from_txt if not rel.get("description")]
+        if missing_rels:
+            batch_rels = batch_get_relations(tenant_ids, kb_ids, missing_rels)
+            for (f, t), rel in rels_from_txt:
+                if not rel.get("description"):
+                    key = tuple(sorted([f, t]))
+                    if key in batch_rels:
+                        rel["description"] = batch_rels[key].get("description", "")
+
         for (f, t), rel in rels_from_txt:
+            # Skip if still no description after batch query
             if not rel.get("description"):
-                for tid in tenant_ids:
-                    rela = get_relation(tid, kb_ids, f, t)
-                    if rela:
-                        break
-                else:
-                    continue
-                rel["description"] = rela["description"]
+                continue
+
             desc = rel["description"]
             try:
                 desc = json.loads(desc).get("description", "")
@@ -271,11 +321,19 @@ class KGSearch(Dealer):
         else:
             relas = ""
 
+        # Community retrieval with performance tracking
+        comm_start = time.time()
+        community_content = self._community_retrieval_([n for n, _ in ents_from_query], filters, kb_ids, idxnms, comm_topn, max_token)
+        logging.info(f"[KG Performance] Community retrieval took: {time.time() - comm_start:.2f}s")
+
+        # Log total retrieval time
+        total_time = time.time() - start_time
+        logging.info(f"[KG Performance] Total KG retrieval took: {total_time:.2f}s")
+
         return {
                 "chunk_id": get_uuid(),
                 "content_ltks": "",
-                "content_with_weight": ents + relas + self._community_retrieval_([n for n, _ in ents_from_query], filters, kb_ids, idxnms,
-                                                        comm_topn, max_token),
+                "content_with_weight": ents + relas + community_content,
                 "doc_id": "",
                 "docnm_kwd": "Related content in Knowledge Graph",
                 "kb_id": kb_ids,

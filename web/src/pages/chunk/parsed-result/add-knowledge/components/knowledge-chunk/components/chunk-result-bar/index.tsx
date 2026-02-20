@@ -8,7 +8,8 @@ import {
 import { Radio } from '@/components/ui/radio';
 import { useTranslate } from '@/hooks/common-hooks';
 import { cn } from '@/lib/utils';
-import { SearchOutlined } from '@ant-design/icons';
+import VectorModal from '@/pages/add-knowledge/components/knowledge-chunk/components/vector-modal';
+import { FunctionOutlined, SearchOutlined } from '@ant-design/icons';
 import { ListFilter, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { ChunkTextMode } from '../../constant';
@@ -20,6 +21,7 @@ interface ChunkResultBarProps {
   createChunk: () => void;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   searchString: string;
+  documentId?: string;
 }
 export default ({
   changeChunkTextMode,
@@ -29,11 +31,13 @@ export default ({
   createChunk,
   handleInputChange,
   searchString,
+  documentId,
 }: ChunkResultBarProps) => {
   const { t } = useTranslate('chunk');
   const [textSelectValue, setTextSelectValue] = useState<string | number>(
     ChunkTextMode.Full,
   );
+  const [vectorModalVisible, setVectorModalVisible] = useState(false);
   const handleFilterChange = (e: string | number) => {
     const value = e === -1 ? undefined : (e as number);
     selectAllChunk(false);
@@ -96,11 +100,24 @@ export default ({
       </Popover>
       <div className="w-[20px]"></div>
       <Button
+        onClick={() => setVectorModalVisible(true)}
+        className="bg-bg-card text-muted-foreground hover:bg-card"
+        title="查看向量数据"
+      >
+        <FunctionOutlined />
+      </Button>
+      <div className="w-[20px]"></div>
+      <Button
         onClick={() => createChunk()}
         className="bg-bg-card text-primary hover:bg-card"
       >
         <Plus size={44} />
       </Button>
+      <VectorModal
+        visible={vectorModalVisible}
+        onCancel={() => setVectorModalVisible(false)}
+        documentId={documentId || ''}
+      />
     </div>
   );
 };

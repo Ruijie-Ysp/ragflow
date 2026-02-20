@@ -1,0 +1,48 @@
+ARG PYTHON_BASE=python:3.9-slim
+FROM ${PYTHON_BASE}
+
+LABEL maintainer="RAGFlow Team"
+LABEL description="RAGFlow OpenAI Proxy Service"
+
+WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY docker/local_codes/requirements_proxy.txt .
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements_proxy.txt
+
+# 复制 proxy 代码
+COPY docker/local_codes/ragflow_openai_proxy.py .
+
+# 创建日志目录
+RUN mkdir -p /app/logs
+
+# 暴露端口
+EXPOSE 8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 使用 Gunicorn 启动
+# -w 4: 4 个 worker 进程
+# -b 0.0.0.0:8000: 监听所有网络接口
+# --timeout 120: 请求超时时间 120 秒
+# --access-logfile -: 访问日志输出到 stdout
+# --error-logfile -: 错误日志输出到 stderr
+CMD ["gunicorn", \
+     "-w", "4", \
+     "-b", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info", \
+     "ragflow_openai_proxy:app"]
+

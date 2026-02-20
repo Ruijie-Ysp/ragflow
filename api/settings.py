@@ -71,7 +71,6 @@ kg_retriever = None
 # user registration switch
 REGISTER_ENABLED = 1
 
-
 # sandbox-executor-manager
 SANDBOX_ENABLED = 0
 SANDBOX_HOST = None

@@ -86,7 +86,8 @@ class LLM(ComponentBase):
         super().__init__(canvas, component_id, param)
         self.chat_mdl = LLMBundle(self._canvas.get_tenant_id(), TenantLLMService.llm_id2llm_type(self._param.llm_id),
                                   self._param.llm_id, max_retries=self._param.max_retries,
-                                  retry_interval=self._param.delay_after_error
+                                  retry_interval=self._param.delay_after_error,
+                                  agent_id=self._canvas.get_agent_id()
                                   )
         self.imgs = []
 
@@ -134,7 +135,8 @@ class LLM(ComponentBase):
             if self.imgs and TenantLLMService.llm_id2llm_type(self._param.llm_id) == LLMType.CHAT.value:
                 self.chat_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.IMAGE2TEXT.value,
                                           self._param.llm_id, max_retries=self._param.max_retries,
-                                          retry_interval=self._param.delay_after_error
+                                          retry_interval=self._param.delay_after_error,
+                                          agent_id=self._canvas.get_agent_id()
                                           )
 
 

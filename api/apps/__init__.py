@@ -16,9 +16,11 @@
 import os
 import sys
 import logging
+import time
+import threading
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-from flask import Blueprint, Flask
+from flask import Blueprint, Flask, request, g, Response
 from werkzeug.wrappers.request import Request
 from flask_cors import CORS
 from flasgger import Swagger
@@ -43,6 +45,76 @@ Request.json = property(lambda self: self.get_json(force=True, silent=True))
 
 app = Flask(__name__)
 smtp_mail_server = Mail()
+
+# --- Simple in-memory HTTP metrics for Prometheus/Grafana monitoring ---
+_metrics_lock = threading.Lock()
+_http_requests_total = {}
+_http_request_duration_sum = {}
+_http_request_duration_count = {}
+
+
+@app.before_request
+def _metrics_before_request():
+    """Record request start time for metrics."""
+    g._request_start_time = time.time()
+
+
+@app.after_request
+def _metrics_after_request(response):
+    """Collect basic HTTP metrics for every request.
+
+    Metrics are intentionally lightweight and in-memory only, so they are safe
+    to use in the default single-process deployment model.
+    """
+    try:
+        start = getattr(g, "_request_start_time", None)
+        if start is not None:
+            duration = max(time.time() - start, 0.0)
+            path = request.path or ""
+            method = request.method or "GET"
+            status = response.status_code
+            key = (path, method, status)
+            with _metrics_lock:
+                _http_requests_total[key] = _http_requests_total.get(key, 0) + 1
+                _http_request_duration_sum[key] = _http_request_duration_sum.get(key, 0.0) + duration
+                _http_request_duration_count[key] = _http_request_duration_count.get(key, 0) + 1
+    except Exception:
+        # Metrics collection must never break normal request handling
+        logging.exception("Failed to record HTTP metrics", exc_info=True)
+    return response
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus metrics endpoint for ragflow-server."""
+    lines = []
+
+    with _metrics_lock:
+        # HTTP request counter
+        lines.append("# HELP ragflow_http_requests_total Total HTTP requests processed by ragflow-server")
+        lines.append("# TYPE ragflow_http_requests_total counter")
+        for (path, method, status), value in _http_requests_total.items():
+            lines.append(
+                f'ragflow_http_requests_total{{path="{path}",method="{method}",status="{status}"}} {value}'
+            )
+
+        # Request duration (sum & count) so that Grafana/Prometheus can compute P95/P99
+        lines.append("# HELP ragflow_http_request_duration_seconds_sum Total time spent processing HTTP requests")
+        lines.append("# TYPE ragflow_http_request_duration_seconds_sum counter")
+        for (path, method, status), value in _http_request_duration_sum.items():
+            lines.append(
+                f'ragflow_http_request_duration_seconds_sum{{path="{path}",method="{method}",status="{status}"}} {value}'
+            )
+
+        lines.append("# HELP ragflow_http_request_duration_seconds_count Number of HTTP requests observed for duration metrics")
+        lines.append("# TYPE ragflow_http_request_duration_seconds_count counter")
+        for (path, method, status), value in _http_request_duration_count.items():
+            lines.append(
+                f'ragflow_http_request_duration_seconds_count{{path="{path}",method="{method}",status="{status}"}} {value}'
+            )
+
+    text = "\n".join(lines) + "\n"
+    return Response(text, mimetype="text/plain; version=0.0.4; charset=utf-8")
 
 # Add this at the beginning of your file to configure Swagger UI
 swagger_config = {

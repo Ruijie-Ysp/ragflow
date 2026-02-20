@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 import logging
+import os
 from langfuse import Langfuse
 from api import settings
 from api.db import LLMType
@@ -253,6 +254,7 @@ class LLM4Tenant:
         self.tenant_id = tenant_id
         self.llm_type = llm_type
         self.llm_name = llm_name
+        self.agent_id = kwargs.get("agent_id")  # Get agent_id from kwargs (Canvas/Agent workflow)
         self.mdl = TenantLLMService.model_instance(tenant_id, llm_type, llm_name, lang=lang, **kwargs)
         assert self.mdl, "Can't find model for {}/{}/{}".format(tenant_id, llm_type, llm_name)
         model_config = TenantLLMService.get_model_config(tenant_id, llm_type, llm_name)
@@ -263,10 +265,43 @@ class LLM4Tenant:
 
         langfuse_keys = TenantLangfuseService.filter_by_tenant(tenant_id=tenant_id)
         self.langfuse = None
-        if langfuse_keys:
-            langfuse = Langfuse(public_key=langfuse_keys.public_key, secret_key=langfuse_keys.secret_key,
-                                host=langfuse_keys.host)
-            if langfuse.auth_check():
-                self.langfuse = langfuse
-                trace_id = self.langfuse.create_trace_id()
-                self.trace_context = {"trace_id": trace_id}
+        self.trace_id = None
+        self.ragflow_api_key = None
+        self.langfuse_public_key = None
+
+        disable_otel = str(os.getenv("OTEL_SDK_DISABLED", "false")).lower() in ("true", "1", "yes", "y")
+        if not disable_otel and langfuse_keys:
+            try:
+                langfuse = Langfuse(
+                    public_key=langfuse_keys.public_key,
+                    secret_key=langfuse_keys.secret_key,
+                    host=langfuse_keys.host,
+                )
+                if langfuse.auth_check():
+                    self.langfuse = langfuse
+                    self.trace_id = self.langfuse.create_trace_id()
+                    self.langfuse_public_key = langfuse_keys.public_key
+
+                    # Get RAGFlow API key (user's access_token)
+                    from api.db.services.user_service import UserService
+                    try:
+                        users = UserService.query(id=tenant_id)
+                        if users:
+                            self.ragflow_api_key = users[0].access_token
+                    except Exception as e:
+                        logging.warning(f"Failed to get RAGFlow API key for tenant {tenant_id}: {e}")
+            except Exception as e:
+                logging.warning(f"Langfuse disabled due to initialization/auth error: {e}")
+
+        # Note: We don't set trace attributes here because there's no active trace context yet.
+        # The trace attributes (user_id, session_id, tags) will be set in the first generation
+        # via the metadata field, which is the recommended approach in Langfuse SDK v3.
+        user_id_value = self.agent_id or tenant_id
+
+        # Debug: Print call stack when agent_id is None
+        if self.agent_id is None:
+            import traceback
+            stack = traceback.format_stack()
+            logging.warning(f"[LANGFUSE] LLMBundle created with agent_id=None! Call stack:\n{''.join(stack[-5:])}")
+
+        logging.info(f"[LANGFUSE] Initialized Langfuse client with trace_id={self.trace_id}, user_id={user_id_value}, agent_id={self.agent_id}")

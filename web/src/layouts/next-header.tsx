@@ -1,4 +1,3 @@
-import { IconFontFill } from '@/components/icon-font';
 import { RAGFlowAvatar } from '@/components/ragflow-avatar';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -18,9 +17,10 @@ import { Routes } from '@/routes';
 import { camelCase } from 'lodash';
 import {
   ChevronDown,
-  CircleHelp,
   Cpu,
+  Database,
   File,
+  FileText,
   House,
   Library,
   MessageSquareText,
@@ -32,10 +32,6 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'umi';
 import { BellButton } from './bell-button';
-
-const handleDocHelpCLick = () => {
-  window.open('https://ragflow.io/docs/dev/category/guides', 'target');
-};
 
 export function Header() {
   const { t } = useTranslation();
@@ -67,10 +63,16 @@ export function Header() {
     () => [
       { path: Routes.Root, name: t('header.Root'), icon: House },
       { path: Routes.Datasets, name: t('header.dataset'), icon: Library },
+      {
+        path: Routes.Literatures,
+        name: t('header.literature'),
+        icon: FileText,
+      },
       { path: Routes.Chats, name: t('header.chat'), icon: MessageSquareText },
       { path: Routes.Searches, name: t('header.search'), icon: Search },
       { path: Routes.Agents, name: t('header.flow'), icon: Cpu },
       { path: Routes.Files, name: t('header.fileManager'), icon: File },
+      { path: Routes.Corpus, name: t('header.corpus'), icon: Database },
     ],
     [t],
   );
@@ -109,7 +111,7 @@ export function Header() {
     <section className="py-5 px-10 flex justify-between items-center ">
       <div className="flex items-center gap-4">
         <img
-          src={'/logo.svg'}
+          src={'/brand.png'}
           alt="logo"
           className="size-10 mr-[12] cursor-pointer"
           onClick={handleLogoClick}
@@ -121,20 +123,6 @@ export function Header() {
         onChange={handleChange}
       ></Segmented>
       <div className="flex items-center gap-5 text-text-badge">
-        <a
-          target="_blank"
-          href="https://discord.com/invite/NjYzJD3GM3"
-          rel="noreferrer"
-        >
-          <IconFontFill name="a-DiscordIconSVGVectorIcon"></IconFontFill>
-        </a>
-        <a
-          target="_blank"
-          href="https://github.com/infiniflow/ragflow"
-          rel="noreferrer"
-        >
-          <IconFontFill name="GitHub"></IconFontFill>
-        </a>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <div className="flex items-center gap-1">
@@ -150,9 +138,7 @@ export function Header() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant={'ghost'} onClick={handleDocHelpCLick}>
-          <CircleHelp />
-        </Button>
+
         <Button variant={'ghost'} onClick={onThemeClick}>
           {theme === 'light' ? <Sun /> : <Moon />}
         </Button>

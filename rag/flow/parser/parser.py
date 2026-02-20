@@ -208,7 +208,7 @@ class Parser(ProcessBase):
             lines, _ = PlainParser()(blob)
             bboxes = [{"text": t} for t, _ in lines]
         else:
-            vision_model = LLMBundle(self._canvas._tenant_id, LLMType.IMAGE2TEXT, llm_name=conf.get("parse_method"), lang=self._param.setups["pdf"].get("lang"))
+            vision_model = LLMBundle(self._canvas._tenant_id, LLMType.IMAGE2TEXT, llm_name=conf.get("parse_method"), lang=self._param.setups["pdf"].get("lang"), agent_id=self._canvas.get_agent_id())
             lines, _ = VisionParser(vision_model=vision_model)(blob, callback=self.callback)
             bboxes = []
             for t, poss in lines:
@@ -325,7 +325,7 @@ class Parser(ProcessBase):
         else:
             lang = conf["lang"]
             # use VLM to describe the picture
-            cv_model = LLMBundle(self._canvas.get_tenant_id(), LLMType.IMAGE2TEXT, llm_name=conf["parse_method"], lang=lang)
+            cv_model = LLMBundle(self._canvas.get_tenant_id(), LLMType.IMAGE2TEXT, llm_name=conf["parse_method"], lang=lang, agent_id=self._canvas.get_agent_id())
             img_binary = io.BytesIO()
             img.save(img_binary, format="JPEG")
             img_binary.seek(0)
@@ -352,7 +352,7 @@ class Parser(ProcessBase):
             tmpf.flush()
             tmp_path = os.path.abspath(tmpf.name)
 
-            seq2txt_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.SPEECH2TEXT)
+            seq2txt_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.SPEECH2TEXT, agent_id=self._canvas.get_agent_id())
             txt = seq2txt_mdl.transcription(tmp_path)
 
             self.set_output("text", txt)

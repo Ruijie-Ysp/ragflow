@@ -108,6 +108,28 @@ def set_llm_cache(llmnm, txt, v, history, genconf):
     REDIS_CONN.set(k, v.encode("utf-8"), 24 * 3600)
 
 
+def get_query_rewrite_cache(question, kb_ids):
+    """Get cached query rewrite result."""
+    hasher = xxhash.xxh64()
+    hasher.update((str(question) + str(sorted(kb_ids))).encode("utf-8"))
+    k = f"qr_{hasher.hexdigest()}"
+    bin = REDIS_CONN.get(k)
+    if not bin:
+        return None
+    try:
+        return json.loads(bin)
+    except Exception:
+        return None
+
+
+def set_query_rewrite_cache(question, kb_ids, result):
+    """Set query rewrite result to cache."""
+    hasher = xxhash.xxh64()
+    hasher.update((str(question) + str(sorted(kb_ids))).encode("utf-8"))
+    k = f"qr_{hasher.hexdigest()}"
+    REDIS_CONN.set(k, json.dumps(result).encode("utf-8"), 3600)  # Cache for 1 hour
+
+
 def get_embed_cache(llmnm, txt):
     hasher = xxhash.xxh64()
     hasher.update(str(llmnm).encode("utf-8"))
@@ -345,6 +367,65 @@ def get_relation(tenant_id, kb_id, from_ent_name, to_ent_name, size=1):
     return res
 
 
+@timeout(5, 5)
+def batch_get_relations(tenant_ids, kb_ids, relation_pairs):
+    """
+    Batch query relations to avoid multiple individual queries.
+
+    Args:
+        tenant_ids: List of tenant IDs
+        kb_ids: List of knowledge base IDs
+        relation_pairs: List of (from_entity, to_entity) tuples
+
+    Returns:
+        Dictionary mapping (from_entity, to_entity) to relation data
+    """
+    if not relation_pairs:
+        return {}
+
+    # Collect all unique entities
+    all_entities = set()
+    for f, t in relation_pairs:
+        all_entities.add(f)
+        all_entities.add(t)
+
+    all_entities = list(all_entities)
+
+    # Query all relations involving these entities at once
+    result_map = {}
+    for tenant_id in tenant_ids:
+        conds = {
+            "fields": ["content_with_weight", "from_entity_kwd", "to_entity_kwd"],
+            "size": len(relation_pairs) * 2,  # Get enough results
+            "from_entity_kwd": all_entities,
+            "to_entity_kwd": all_entities,
+            "knowledge_graph_kwd": ["relation"]
+        }
+        try:
+            es_res = settings.retriever.search(conds, search.index_name(tenant_id), kb_ids)
+            for id in es_res.ids:
+                try:
+                    from_ent = es_res.field[id].get("from_entity_kwd")
+                    to_ent = es_res.field[id].get("to_entity_kwd")
+                    if isinstance(from_ent, list):
+                        from_ent = from_ent[0]
+                    if isinstance(to_ent, list):
+                        to_ent = to_ent[0]
+
+                    # Store in both directions (sorted)
+                    key = tuple(sorted([from_ent, to_ent]))
+                    if key not in result_map:
+                        result_map[key] = json.loads(es_res.field[id]["content_with_weight"])
+                except Exception as e:
+                    logging.exception(f"Error parsing relation: {e}")
+                    continue
+        except Exception as e:
+            logging.exception(f"Error in batch_get_relations for tenant {tenant_id}: {e}")
+            continue
+
+    return result_map
+
+
 async def graph_edge_to_chunk(kb_id, embd_mdl, from_ent_name, to_ent_name, meta, chunks):
     enable_timeout_assertion = os.environ.get("ENABLE_TIMEOUT_ASSERTION")
     chunk = {
@@ -554,8 +635,24 @@ def merge_tuples(list1, list2):
     return result
 
 
-async def get_entity_type2samples(idxnms, kb_ids: list):
-    es_res = await trio.to_thread.run_sync(lambda: settings.retriever.search({"knowledge_graph_kwd": "ty2ents", "kb_id": kb_ids, "size": 10000, "fields": ["content_with_weight"]}, idxnms, kb_ids))
+async def get_entity_type2samples(idxnms, kb_ids: list, max_samples: int = 1000):
+    """
+    Get entity type to samples mapping.
+
+    Args:
+        idxnms: Index names
+        kb_ids: Knowledge base IDs
+        max_samples: Maximum number of samples to retrieve (default: 1000, reduced from 10000 for performance)
+
+    Returns:
+        Dictionary mapping entity types to sample entities
+    """
+    es_res = await trio.to_thread.run_sync(lambda: settings.retriever.search({
+        "knowledge_graph_kwd": "ty2ents",
+        "kb_id": kb_ids,
+        "size": max_samples,  # Reduced from 10000 to improve performance
+        "fields": ["content_with_weight"]
+    }, idxnms, kb_ids))
 
     res = defaultdict(list)
     for id in es_res.ids:

@@ -696,6 +696,8 @@ def group_by(list_of_dict, key):
 def get_mcp_tools(mcp_servers: list, timeout: float | int = 10) -> tuple[dict, str]:
     results = {}
     tool_call_sessions = []
+    errors = []
+
     try:
         for mcp_server in mcp_servers:
             server_key = mcp_server.id
@@ -707,7 +709,11 @@ def get_mcp_tools(mcp_servers: list, timeout: float | int = 10) -> tuple[dict, s
 
             try:
                 tools = tool_call_session.get_tools(timeout)
-            except Exception:
+            except Exception as e:
+                # Record the error instead of silently ignoring it
+                error_msg = f"Failed to get tools from MCP server '{server_key}': {str(e)}"
+                logging.error(error_msg)
+                errors.append(error_msg)
                 tools = []
 
             results[server_key] = []
@@ -720,6 +726,11 @@ def get_mcp_tools(mcp_servers: list, timeout: float | int = 10) -> tuple[dict, s
 
         # PERF: blocking call to close sessions — consider moving to background thread or task queue
         close_multiple_mcp_toolcall_sessions(tool_call_sessions)
+
+        # Return error message if any server failed
+        if errors:
+            return results, "; ".join(errors)
+
         return results, ""
     except Exception as e:
         return {}, str(e)

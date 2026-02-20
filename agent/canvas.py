@@ -153,6 +153,10 @@ class Graph:
     def get_tenant_id(self):
         return self._tenant_id
 
+    def get_agent_id(self):
+        """Get agent_id (task_id) for Langfuse tracking"""
+        return self.task_id
+
     def get_variable_value(self, exp: str) -> Any:
         exp = exp.strip("{").strip("}").strip(" ").strip("{").strip("}")
         if exp.find("@") < 0:

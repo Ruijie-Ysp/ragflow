@@ -40,14 +40,35 @@ services:
       - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
       - ./nginx/proxy.conf:/etc/nginx/proxy.conf
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ../history_data_agent:/ragflow/history_data_agent
+      #- ../history_data_agent:/ragflow/history_data_agent
       - ./service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template
+      - ./local.service_conf.yaml:/ragflow/conf/local.service_conf.yaml
       - ./entrypoint.sh:/ragflow/entrypoint.sh
+      #- ../api/apps/__init__.py:/ragflow/api/apps/__init__.py
+      # Mount modified MCP files for bug fixes
+      ##- ../api/utils/api_utils.py:/ragflow/api/utils/api_utils.py
+      #- ../api/apps/mcp_server_app.py:/ragflow/api/apps/mcp_server_app.py
+      #- ../rag/utils/mcp_tool_call_conn.py:/ragflow/rag/utils/mcp_tool_call_conn.py
+      # Langfuse v3 migration files are now built into the image
+      # For development with live code updates, use docker-compose-dev.yml instead
+
+      # 向量数据展示功能 - 后端 API 文件
+      - ../api/apps/api_app.py:/ragflow/api/apps/api_app.py
+      - ../api/apps/chunk_app.py:/ragflow/api/apps/chunk_app.py
+
+      # 向量数据展示功能 - 前端文件（前端已编译到镜像中，不需要挂载）
+      #- ../web/src/hooks/use-vector-metadata.ts:/ragflow/web/src/hooks/use-vector-metadata.ts
+      #- ../web/src/components/vector-metadata-panel.tsx:/ragflow/web/src/components/vector-metadata-panel.tsx
+      #- ../web/src/components/vector-statistics-summary.tsx:/ragflow/web/src/components/vector-statistics-summary.tsx
+      #- ../web/src/pages/add-knowledge/components/knowledge-chunk/components/vector-modal:/ragflow/web/src/pages/add-knowledge/components/knowledge-chunk/components/vector-modal
+      #- ../web/src/pages/add-knowledge/components/knowledge-chunk/components/chunk-toolbar/index.tsx:/ragflow/web/src/pages/add-knowledge/components/knowledge-chunk/components/chunk-toolbar/index.tsx
+
     env_file: .env
     environment:
       - TZ=${TIMEZONE}
       - HF_ENDPOINT=${HF_ENDPOINT-}
       - MACOS=${MACOS-}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED}
     networks:
       - ragflow
     restart: on-failure
@@ -56,6 +77,33 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
   # executor:
+  ragflow-proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.proxy
+      args:
+        PYTHON_BASE: ${PYTHON_BASE_IMAGE-python:3.9-slim}
+    image: ragflow-openai-proxy:latest
+    container_name: ragflow-openai-proxy
+    depends_on:
+      ragflow:
+        condition: service_started
+    ports:
+      - ${PROXY_PORT}:8000
+    env_file: .env
+    environment:
+      - RAGFLOW_BASE_URL=http://ragflow:80
+      - RAGFLOW_API_KEY=${RAGFLOW_API_KEY}
+      - TZ=${TIMEZONE}
+    networks:
+      - ragflow
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
   #   depends_on:
   #     mysql:
   #       condition: service_healthy
@@ -77,3 +125,24 @@ services:
   #   # If you're using Docker Desktop, the --add-host flag is optional. This flag makes sure that the host's internal IP gets exposed to the Prometheus container.
   #   extra_hosts:
   #     - "host.docker.internal:host-gateway"
+  #executor:
+  #  depends_on:
+  #    mysql:
+  #      condition: service_healthy
+  #  image: ${RAGFLOW_IMAGE}
+  #  container_name: ragflow-executor
+  #  volumes:
+  #    - ./ragflow-logs:/ragflow/logs
+  #    - ./nginx/ragflow.conf:/etc/nginx/conf.d/ragflow.conf
+  #    - ./local.service_conf.yaml:/ragflow/conf/local.service_conf.yaml
+  #  env_file: .env
+  #  environment:
+  #    - TZ=${TIMEZONE}
+  #    - HF_ENDPOINT=${HF_ENDPOINT-}
+  #    - MACOS=${MACOS-}
+  #  command: ["--disable-webserver", "--workers=2"]
+  #  networks:
+  #    - ragflow
+  #  restart: on-failure
+  #  extra_hosts:
+  #    - "host.docker.internal:host-gateway"

@@ -86,6 +86,45 @@ class LLMBundle(LLM4Tenant):
     def __init__(self, tenant_id, llm_type, llm_name=None, lang="Chinese", **kwargs):
         super().__init__(tenant_id, llm_type, llm_name, lang, **kwargs)
 
+    def _get_generation_metadata(self, **extra_metadata):
+        """Get metadata for Langfuse generation tracking
+
+        In Langfuse SDK v3, trace attributes (user_id, session_id, tags) can be set
+        via special fields in the metadata parameter of OpenAI calls or generations.
+
+        Special Langfuse fields:
+        - langfuse_user_id: Sets the user_id at trace level
+        - langfuse_session_id: Sets the session_id at trace level (same as user_id for Canvas/Agent)
+        - langfuse_tags: Sets tags at trace level (list of strings)
+        """
+        user_id_value = self.agent_id or self.tenant_id
+
+        metadata = {
+            # Langfuse trace-level attributes (special fields)
+            "langfuse_user_id": user_id_value,
+            "langfuse_session_id": self.agent_id,  # For Canvas/Agent, session_id = agent_id
+            "langfuse_tags": [
+                "ragflow",
+                f"tenant:{self.tenant_id}",
+                f"llm_type:{self.llm_type}",
+                f"model:{self.llm_name}" if self.llm_name else "model:default",
+            ],
+            # Regular metadata
+            "tenant_id": self.tenant_id,
+            "llm_type": self.llm_type,
+            "llm_name": self.llm_name or "default",
+            "ragflow_version": "1.0.0",
+            "user_id": user_id_value,
+            "agent_id": self.agent_id,
+        }
+        if self.ragflow_api_key:
+            metadata["ragflow_api_key"] = self.ragflow_api_key
+        if self.langfuse_public_key:
+            metadata["langfuse_public_key"] = self.langfuse_public_key
+        # Add any extra metadata
+        metadata.update(extra_metadata)
+        return metadata
+
     def bind_tools(self, toolcall_session, tools):
         if not self.is_tools:
             logging.warning(f"Model {self.llm_name} does not support tool call, but you have assigned one or more tools to it!")
@@ -94,103 +133,170 @@ class LLMBundle(LLM4Tenant):
 
     def encode(self, texts: list):
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="encode", model=self.llm_name, input={"texts": texts})
+            with self.langfuse.start_as_current_generation(
+                name="encode",
+                model=self.llm_name,
+                input={"texts": texts},
+                metadata=self._get_generation_metadata()
+            ) as generation:
+                embeddings, used_tokens = self.mdl.encode(texts)
+                llm_name = getattr(self, "llm_name", None)
+                if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, llm_name):
+                    logging.error("LLMBundle.encode can't update token usage for {}/EMBEDDING used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        embeddings, used_tokens = self.mdl.encode(texts)
-        llm_name = getattr(self, "llm_name", None)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, llm_name):
-            logging.error("LLMBundle.encode can't update token usage for {}/EMBEDDING used_tokens: {}".format(self.tenant_id, used_tokens))
-
-        if self.langfuse:
-            generation.update(usage_details={"total_tokens": used_tokens})
-            generation.end()
-
-        return embeddings, used_tokens
+                generation.update(usage_details={"total_tokens": used_tokens})
+                return embeddings, used_tokens  # 修复: 返回两个值
+        else:
+            embeddings, used_tokens = self.mdl.encode(texts)
+            llm_name = getattr(self, "llm_name", None)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, llm_name):
+                logging.error("LLMBundle.encode can't update token usage for {}/EMBEDDING llm_name: {}, used_tokens: {}".format(self.tenant_id, llm_name, used_tokens))
+            return embeddings, used_tokens
 
     def encode_queries(self, query: str):
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="encode_queries", model=self.llm_name, input={"query": query})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="encode_queries",
+                model=self.llm_name,
+                input={"query": query},
+                metadata=self._get_generation_metadata()
+            )
+            generation = generation_cm.__enter__()
 
-        emd, used_tokens = self.mdl.encode_queries(query)
-        llm_name = getattr(self, "llm_name", None)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, llm_name):
-            logging.error("LLMBundle.encode_queries can't update token usage for {}/EMBEDDING used_tokens: {}".format(self.tenant_id, used_tokens))
+        try:
+            emd, used_tokens = self.mdl.encode_queries(query)
+            llm_name = getattr(self, "llm_name", None)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, llm_name):
+                logging.error("LLMBundle.encode_queries can't update token usage for {}/EMBEDDING used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        if self.langfuse:
-            generation.update(usage_details={"total_tokens": used_tokens})
-            generation.end()
+            if generation:
+                generation.update(usage_details={"total_tokens": used_tokens})
 
-        return emd, used_tokens
+            return emd, used_tokens
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def similarity(self, query: str, texts: list):
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="similarity", model=self.llm_name, input={"query": query, "texts": texts})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="similarity",
+                model=self.llm_name,
+                input={"query": query, "texts": texts},
+                metadata=self._get_generation_metadata()
+            )
+            generation = generation_cm.__enter__()
 
-        sim, used_tokens = self.mdl.similarity(query, texts)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
-            logging.error("LLMBundle.similarity can't update token usage for {}/RERANK used_tokens: {}".format(self.tenant_id, used_tokens))
+        try:
+            sim, used_tokens = self.mdl.similarity(query, texts)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
+                logging.error("LLMBundle.similarity can't update token usage for {}/RERANK used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        if self.langfuse:
-            generation.update(usage_details={"total_tokens": used_tokens})
-            generation.end()
+            if generation:
+                generation.update(usage_details={"total_tokens": used_tokens})
 
-        return sim, used_tokens
+            return sim, used_tokens
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def describe(self, image, max_tokens=300):
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="describe", metadata={"model": self.llm_name})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="describe",
+                model=self.llm_name,
+                metadata=self._get_generation_metadata()
+            )
+            generation = generation_cm.__enter__()
 
-        txt, used_tokens = self.mdl.describe(image)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
-            logging.error("LLMBundle.describe can't update token usage for {}/IMAGE2TEXT used_tokens: {}".format(self.tenant_id, used_tokens))
+        try:
+            txt, used_tokens = self.mdl.describe(image)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
+                logging.error("LLMBundle.describe can't update token usage for {}/IMAGE2TEXT used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        if self.langfuse:
-            generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
-            generation.end()
+            if generation:
+                generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
 
-        return txt
+            return txt
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def describe_with_prompt(self, image, prompt):
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="describe_with_prompt", metadata={"model": self.llm_name, "prompt": prompt})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="describe_with_prompt",
+                model=self.llm_name,
+                metadata=self._get_generation_metadata(prompt=prompt)
+            )
+            generation = generation_cm.__enter__()
 
-        txt, used_tokens = self.mdl.describe_with_prompt(image, prompt)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
-            logging.error("LLMBundle.describe can't update token usage for {}/IMAGE2TEXT used_tokens: {}".format(self.tenant_id, used_tokens))
+        try:
+            txt, used_tokens = self.mdl.describe_with_prompt(image, prompt)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
+                logging.error("LLMBundle.describe can't update token usage for {}/IMAGE2TEXT used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        if self.langfuse:
-            generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
-            generation.end()
+            if generation:
+                generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
 
-        return txt
+            return txt
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def transcription(self, audio):
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="transcription", metadata={"model": self.llm_name})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="transcription",
+                model=self.llm_name,
+                metadata=self._get_generation_metadata()
+            )
+            generation = generation_cm.__enter__()
 
-        txt, used_tokens = self.mdl.transcription(audio)
-        if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
-            logging.error("LLMBundle.transcription can't update token usage for {}/SEQUENCE2TXT used_tokens: {}".format(self.tenant_id, used_tokens))
+        try:
+            txt, used_tokens = self.mdl.transcription(audio)
+            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens):
+                logging.error("LLMBundle.transcription can't update token usage for {}/SEQUENCE2TXT used_tokens: {}".format(self.tenant_id, used_tokens))
 
-        if self.langfuse:
-            generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
-            generation.end()
+            if generation:
+                generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
 
-        return txt
+            return txt
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def tts(self, text: str) -> Generator[bytes, None, None]:
+        generation_cm = None
+        generation = None
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="tts", input={"text": text})
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="tts",
+                input={"text": text},
+                metadata=self._get_generation_metadata()
+            )
+            generation = generation_cm.__enter__()
 
-        for chunk in self.mdl.tts(text):
-            if isinstance(chunk, int):
-                if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, chunk, self.llm_name):
-                    logging.error("LLMBundle.tts can't update token usage for {}/TTS".format(self.tenant_id))
-                return
-            yield chunk
-
-        if self.langfuse:
-            generation.end()
+        try:
+            for chunk in self.mdl.tts(text):
+                if isinstance(chunk, int):
+                    if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, chunk, self.llm_name):
+                        logging.error("LLMBundle.tts can't update token usage for {}/TTS".format(self.tenant_id))
+                    return
+                yield chunk
+        finally:
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
 
     def _remove_reasoning_content(self, txt: str) -> str:
         first_think_start = txt.find("<think>")
@@ -205,74 +311,159 @@ class LLMBundle(LLM4Tenant):
             return txt
 
         return txt[last_think_end + len("</think>") :]
-
+    
     @staticmethod
     def _clean_param(chat_partial, **kwargs):
         func = chat_partial.func
         sig = inspect.signature(func)
+        keyword_args = []
         support_var_args = False
-        allowed_params = set()
-
         for param in sig.parameters.values():
-            if param.kind == inspect.Parameter.VAR_KEYWORD:
+            if param.kind == inspect.Parameter.VAR_KEYWORD or param.kind == inspect.Parameter.VAR_POSITIONAL:
                 support_var_args = True
-            elif param.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY):
-                allowed_params.add(param.name)
-        if support_var_args:
-            return kwargs
-        else:
-            return {k: v for k, v in kwargs.items() if k in allowed_params}
+            elif param.kind == inspect.Parameter.KEYWORD_ONLY:
+                keyword_args.append(param.name)
+
+        use_kwargs = kwargs
+        if not support_var_args:
+            use_kwargs = {k: v for k, v in kwargs.items() if k in keyword_args}
+        return use_kwargs
+        
     def chat(self, system: str, history: list, gen_conf: dict = {}, **kwargs) -> str:
         if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="chat", model=self.llm_name, input={"system": system, "history": history})
+            # Use with statement to automatically manage the generation lifecycle
+            metadata = self._get_generation_metadata(streaming=False)
+            logging.info(f"[LANGFUSE] chat: Creating generation with metadata keys: {list(metadata.keys())}")
 
-        chat_partial = partial(self.mdl.chat, system, history, gen_conf, **kwargs)
-        if self.is_tools and self.mdl.is_tools:
-            chat_partial = partial(self.mdl.chat_with_tools, system, history, gen_conf, **kwargs)
+            with self.langfuse.start_as_current_generation(
+                name="chat",
+                model=self.llm_name,
+                input={"system": system, "history": history},
+                metadata=metadata
+            ) as generation:
+                chat_partial = partial(self.mdl.chat, system, history, gen_conf)
+                if self.is_tools and self.mdl.is_tools:
+                    chat_partial = partial(self.mdl.chat_with_tools, system, history, gen_conf)
 
-        use_kwargs = self._clean_param(chat_partial, **kwargs)
-        txt, used_tokens = chat_partial(**use_kwargs)
-        txt = self._remove_reasoning_content(txt)
+                use_kwargs = self._clean_param(chat_partial, **kwargs)
+                txt, used_tokens = chat_partial(**use_kwargs)
+                txt = self._remove_reasoning_content(txt)
 
-        if not self.verbose_tool_use:
-            txt = re.sub(r"<tool_call>.*?</tool_call>", "", txt, flags=re.DOTALL)
+                if not self.verbose_tool_use:
+                    txt = re.sub(r"<tool_call>.*?</tool_call>", "", txt, flags=re.DOTALL)
 
-        if isinstance(txt, int) and not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, self.llm_name):
-            logging.error("LLMBundle.chat can't update token usage for {}/CHAT llm_name: {}, used_tokens: {}".format(self.tenant_id, self.llm_name, used_tokens))
+                if isinstance(txt, int) and not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, self.llm_name):
+                    logging.error("LLMBundle.chat can't update token usage for {}/CHAT llm_name: {}, used_tokens: {}".format(self.tenant_id, self.llm_name, used_tokens))
 
-        if self.langfuse:
-            generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
-            generation.end()
+                generation.update(output={"output": txt}, usage_details={"total_tokens": used_tokens})
+                logging.info(f"[LANGFUSE] chat: Generation ended, flushing data to Langfuse...")
 
-        return txt
+            # Flush after the context manager exits
+            try:
+                self.langfuse.flush()
+                logging.info(f"[LANGFUSE] chat: Successfully flushed data to Langfuse")
+            except Exception as e:
+                logging.error(f"[LANGFUSE] chat: Failed to flush data: {e}", exc_info=True)
 
-    def chat_streamly(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
-        if self.langfuse:
-            generation = self.langfuse.start_generation(trace_context=self.trace_context, name="chat_streamly", model=self.llm_name, input={"system": system, "history": history})
+            return txt
+        else:
+            # No Langfuse tracking
+            chat_partial = partial(self.mdl.chat, system, history, gen_conf)
+            if self.is_tools and self.mdl.is_tools:
+                chat_partial = partial(self.mdl.chat_with_tools, system, history, gen_conf)
 
-        ans = ""
-        chat_partial = partial(self.mdl.chat_streamly, system, history, gen_conf)
-        total_tokens = 0
-        if self.is_tools and self.mdl.is_tools:
-            chat_partial = partial(self.mdl.chat_streamly_with_tools, system, history, gen_conf)
-        use_kwargs = self._clean_param(chat_partial, **kwargs)
-        for txt in chat_partial(**use_kwargs):
-            if isinstance(txt, int):
-                total_tokens = txt
-                if self.langfuse:
-                    generation.update(output={"output": ans})
-                    generation.end()
-                break
-
-            if txt.endswith("</think>"):
-                ans = ans[: -len("</think>")]
+            use_kwargs = self._clean_param(chat_partial, **kwargs)
+            txt, used_tokens = chat_partial(**use_kwargs)
+            txt = self._remove_reasoning_content(txt)
 
             if not self.verbose_tool_use:
                 txt = re.sub(r"<tool_call>.*?</tool_call>", "", txt, flags=re.DOTALL)
 
-            ans += txt
-            yield ans
+            if isinstance(txt, int) and not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, used_tokens, self.llm_name):
+                logging.error("LLMBundle.chat can't update token usage for {}/CHAT llm_name: {}, used_tokens: {}".format(self.tenant_id, self.llm_name, used_tokens))
 
-        if total_tokens > 0:
-            if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, txt, self.llm_name):
-                logging.error("LLMBundle.chat_streamly can't update token usage for {}/CHAT llm_name: {}, content: {}".format(self.tenant_id, self.llm_name, txt))
+            return txt
+
+    def chat_streamly(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
+        generation_cm = None
+        generation = None
+        if self.langfuse:
+            # Get metadata with trace-level attributes
+            metadata = self._get_generation_metadata(streaming=True)
+
+            logging.info(f"[LANGFUSE] chat_streamly: Creating generation with metadata keys: {list(metadata.keys())}")
+
+            # Create context manager but don't enter it yet
+            generation_cm = self.langfuse.start_as_current_generation(
+                name="chat_streamly",  # Changed from "chat" to distinguish from non-streaming
+                model=self.llm_name,
+                input={"system": system, "history": history},
+                metadata=metadata
+            )
+            # Manually enter the context manager
+            generation = generation_cm.__enter__()
+
+            # Ensure trace-level metadata is set
+            # In Langfuse SDK v3, metadata with special fields (langfuse_user_id, langfuse_session_id, langfuse_tags)
+            # should be automatically extracted and set at trace level, but we explicitly update to ensure it's set
+            if generation:
+                try:
+                    trace_metadata = {k: v for k, v in metadata.items() if not k.startswith("langfuse_")}
+                    logging.info(f"[LANGFUSE] chat_streamly: Updating trace metadata with keys: {list(trace_metadata.keys())}")
+                    generation.update_trace(metadata=trace_metadata)
+                    logging.info(f"[LANGFUSE] chat_streamly: Successfully updated trace metadata")
+                except Exception as e:
+                    logging.error(f"[LANGFUSE] chat_streamly: Failed to update trace metadata: {e}", exc_info=True)
+
+        try:
+            ans = ""
+            chat_partial = partial(self.mdl.chat_streamly, system, history, gen_conf)
+            total_tokens = 0
+            detailed_usage = None
+            if self.is_tools and self.mdl.is_tools:
+                chat_partial = partial(self.mdl.chat_streamly_with_tools, system, history, gen_conf)
+            use_kwargs = self._clean_param(chat_partial, **kwargs)
+            for txt in chat_partial(**use_kwargs):
+                # Check if this is detailed usage info (dict) or total tokens (int)
+                if isinstance(txt, dict) and "total_tokens" in txt:
+                    detailed_usage = txt
+                    total_tokens = txt["total_tokens"]
+                    if generation:
+                        # Use detailed usage if available
+                        usage_details = {
+                            "input": txt.get("input_tokens", 0),
+                            "output": txt.get("output_tokens", 0),
+                            "total": txt["total_tokens"]
+                        }
+                        generation.update(output={"output": ans}, usage_details=usage_details)
+                    break
+                elif isinstance(txt, int):
+                    total_tokens = txt
+                    if generation:
+                        # Fallback to total tokens only
+                        generation.update(output={"output": ans}, usage_details={"total_tokens": total_tokens})
+                    break
+
+                if txt.endswith("</think>"):
+                    ans = ans.rstrip("</think>")
+
+                if not self.verbose_tool_use:
+                    txt = re.sub(r"<tool_call>.*?</tool_call>", "", txt, flags=re.DOTALL)
+
+                ans += txt
+                yield ans
+
+            if total_tokens > 0:
+                if not TenantLLMService.increase_usage(self.tenant_id, self.llm_type, total_tokens, self.llm_name):
+                    logging.error("LLMBundle.chat_streamly can't update token usage for {}/CHAT llm_name: {}, tokens: {}".format(self.tenant_id, self.llm_name, total_tokens))
+        finally:
+            # Manually exit the context manager
+            if generation_cm:
+                generation_cm.__exit__(None, None, None)
+                logging.info(f"[LANGFUSE] chat_streamly: Generation ended, flushing data to Langfuse...")
+                try:
+                    # Flush to ensure data is sent to Langfuse
+                    self.langfuse.flush()
+                    logging.info(f"[LANGFUSE] chat_streamly: Successfully flushed data to Langfuse")
+                except Exception as e:
+                    logging.error(f"[LANGFUSE] chat_streamly: Failed to flush data: {e}", exc_info=True)

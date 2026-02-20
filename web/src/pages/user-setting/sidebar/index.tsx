@@ -11,27 +11,21 @@ import {
 } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import { Banknote, Box, Cog, Unplug, User, Users } from 'lucide-react';
-import { useEffect } from 'react';
+import {
+  Banknote,
+  Box,
+  Cog,
+  Database,
+  Unplug,
+  User,
+  Users,
+} from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useHandleMenuClick } from './hooks';
 
-const menuItems = [
-  { icon: User, label: 'Profile', key: Routes.Profile },
-  { icon: Users, label: 'Team', key: Routes.Team },
-  { icon: Box, label: 'Model Providers', key: Routes.Model },
-  { icon: Unplug, label: 'API', key: Routes.Api },
-  // {
-  //   icon: MessageSquareQuote,
-  //   label: 'Prompt Templates',
-  //   key: Routes.Profile,
-  // },
-  // { icon: TextSearch, label: 'Retrieval Templates', key: Routes.Profile },
-  { icon: Cog, label: 'System', key: Routes.System },
-  // { icon: Banknote, label: 'Plan', key: Routes.Plan },
-  { icon: Banknote, label: 'MCP', key: Routes.Mcp },
-];
-
 export function SideBar() {
+  const { t } = useTranslation();
   const pathName = useSecondPathName();
   const { data: userInfo } = useFetchUserInfo();
   const { handleMenuClick, active } = useHandleMenuClick();
@@ -42,6 +36,19 @@ export function SideBar() {
     }
   }, [fetchSystemVersion]);
   const { logout } = useLogout();
+
+  const menuItems = useMemo(
+    () => [
+      { icon: User, label: t('setting.profile'), key: Routes.Profile },
+      { icon: Users, label: t('setting.team'), key: Routes.Team },
+      { icon: Box, label: t('setting.model'), key: Routes.Model },
+      { icon: Unplug, label: t('setting.api'), key: Routes.Api },
+      { icon: Cog, label: t('setting.system'), key: Routes.System },
+      { icon: Banknote, label: 'MCP', key: Routes.Mcp },
+      { icon: Database, label: t('setting.database'), key: Routes.Database },
+    ],
+    [t],
+  );
 
   return (
     <aside className="w-[303px] bg-bg-base flex flex-col">
@@ -75,11 +82,7 @@ export function SideBar() {
                     )}
                     <span>{item.label}</span>
                   </section>
-                  {item.key === Routes.System && (
-                    <div className="mr-2 px-2 bg-accent-primary-5 text-accent-primary rounded-md">
-                      {version}
-                    </div>
-                  )}
+
                   {/* {active && (
                     <div className="absolute right-0 w-[5px] h-[66px] bg-primary rounded-l-xl shadow-[0_0_5.94px_#7561ff,0_0_11.88px_#7561ff,0_0_41.58px_#7561ff,0_0_83.16px_#7561ff,0_0_142.56px_#7561ff,0_0_249.48px_#7561ff]" />
                   )} */}
@@ -101,7 +104,7 @@ export function SideBar() {
             logout();
           }}
         >
-          Log Out
+          {t('setting.logout')}
         </Button>
       </div>
     </aside>

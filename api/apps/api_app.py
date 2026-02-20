@@ -521,6 +521,8 @@ def list_chunks():
             data=False, message='Authentication error: API key is invalid!"', code=settings.RetCode.AUTHENTICATION_ERROR)
 
     req = request.json
+    # Support include_vector parameter to return vector data
+    include_vector = req.get("include_vector", False)
 
     try:
         if "doc_name" in req.keys():
@@ -536,19 +538,62 @@ def list_chunks():
             )
         kb_ids = KnowledgebaseService.get_kb_ids(tenant_id)
 
-        res = settings.retriever.chunk_list(doc_id, tenant_id, kb_ids)
-        res = [
-            {
+        # Get additional fields if include_vector is True
+        fields = ["docnm_kwd", "content_with_weight", "img_id"]
+        if include_vector:
+            # Add vector-related fields
+            fields.extend(["chunk_id"])
+
+        res = settings.retriever.chunk_list(doc_id, tenant_id, kb_ids, fields=fields)
+
+        result = []
+        for res_item in res:
+            chunk_data = {
                 "content": res_item["content_with_weight"],
                 "doc_name": res_item["docnm_kwd"],
                 "image_id": res_item["img_id"]
-            } for res_item in res
-        ]
+            }
+
+            if include_vector:
+                chunk_data["chunk_id"] = res_item.get("chunk_id", "")
+                # Find vector field (format: q_{dim}_vec)
+                vector_field = None
+                vector_data = None
+                for key in res_item.keys():
+                    if key.endswith("_vec") and key.startswith("q_"):
+                        vector_field = key
+                        vector_data = res_item[key]
+                        break
+
+                if vector_data:
+                    # Extract dimension from field name (e.g., "q_1024_vec" -> 1024)
+                    import re
+                    match = re.search(r'q_(\d+)_vec', vector_field)
+                    vector_dim = int(match.group(1)) if match else len(vector_data)
+
+                    # Calculate vector statistics
+                    import numpy as np
+                    vec_array = np.array(vector_data)
+
+                    chunk_data["vector_metadata"] = {
+                        "dimension": vector_dim,
+                        "field_name": vector_field,
+                        "mean": float(np.mean(vec_array)),
+                        "std": float(np.std(vec_array)),
+                        "min": float(np.min(vec_array)),
+                        "max": float(np.max(vec_array)),
+                        "norm": float(np.linalg.norm(vec_array))
+                    }
+                    # Optionally include the full vector (can be large)
+                    if req.get("include_full_vector", False):
+                        chunk_data["vector_metadata"]["vector"] = vector_data
+
+            result.append(chunk_data)
 
     except Exception as e:
         return server_error_response(e)
 
-    return get_json_result(data=res)
+    return get_json_result(data=result)
 
 @manager.route('/get_chunk/<chunk_id>', methods=['GET'])  # noqa: F821
 # @login_required

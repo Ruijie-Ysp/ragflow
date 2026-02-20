@@ -16,6 +16,7 @@ export enum Routes {
   Chats = '/next-chats',
   Chat = '/next-chat',
   Files = '/files',
+  Corpus = '/corpus',
   ProfileSetting = '/profile-setting',
   Profile = '/profile',
   Api = '/api',
@@ -24,6 +25,7 @@ export enum Routes {
   Plan = '/plan',
   System = '/system',
   Model = '/model',
+  Database = '/database',
   Prompt = '/prompt',
   ProfileMcp = `${ProfileSetting}${Mcp}`,
   ProfileTeam = `${ProfileSetting}${Team}`,
@@ -49,6 +51,9 @@ export enum Routes {
   DataSetOverview = '/dataset-overview',
   DataSetSetting = '/dataset-setting',
   DataflowResult = '/dataflow-result',
+  // 文献处理模块
+  Literatures = '/literatures',
+  Literature = '/literature',
 }
 
 const routes = [
@@ -122,6 +127,10 @@ const routes = [
         path: 'knowledgeGraph',
         component: '@/pages/add-knowledge/components/knowledge-graph',
       },
+      {
+        path: 'corpus',
+        component: '@/pages/add-knowledge/components/knowledge-corpus',
+      },
     ],
   },
 
@@ -132,6 +141,10 @@ const routes = [
   {
     path: '/file',
     component: '@/pages/file-manager',
+  },
+  {
+    path: Routes.Corpus,
+    component: '@/pages/corpus',
   },
   {
     path: Routes.AgentList,
@@ -394,6 +407,10 @@ const routes = [
         path: `/user-setting${Routes.Mcp}`,
         component: `@/pages${Routes.ProfileMcp}`,
       },
+      {
+        path: '/user-setting/database',
+        component: '@/pages/user-setting/setting-database',
+      },
     ],
   },
   {
@@ -411,6 +428,29 @@ const routes = [
     path: `${Routes.DataFlow}/:id`,
     layout: false,
     component: `@/pages${Routes.DataFlow}`,
+  },
+  // 文献处理模块路由
+  {
+    path: Routes.Literatures,
+    layout: false,
+    component: '@/layouts/next',
+    routes: [
+      {
+        path: Routes.Literatures,
+        component: `@/pages${Routes.Literatures}`,
+      },
+    ],
+  },
+  {
+    path: Routes.Literature,
+    layout: false,
+    component: '@/layouts/next',
+    routes: [
+      {
+        path: `${Routes.Literature}/:id`,
+        component: `@/pages${Routes.Literature}`,
+      },
+    ],
   },
 ];
 

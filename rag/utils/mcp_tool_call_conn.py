@@ -76,8 +76,36 @@ class MCPToolCallSession(ToolCallSession):
                             msg = f"Timeout initializing client_session for server {self._mcp_server.id}"
                             logging.error(msg)
                             await self._process_mcp_tasks(None, msg)
-            except Exception:
-                msg = "Connection failed (possibly due to auth error). Please check authentication settings first"
+            except Exception as e:
+                logging.exception(e)
+                # Provide more detailed error message
+                error_type = type(e).__name__
+                error_msg = str(e)
+
+                # Handle ExceptionGroup (Python 3.11+)
+                if error_type == "ExceptionGroup":
+                    # Extract the actual exceptions from the group
+                    try:
+                        exceptions = e.exceptions if hasattr(e, 'exceptions') else [e]
+                        if exceptions:
+                            actual_error = exceptions[0]
+                            error_type = type(actual_error).__name__
+                            error_msg = str(actual_error)
+                    except Exception:
+                        pass
+
+                msg = f"Connection failed: {error_type}: {error_msg}. "
+
+                # Add specific hints based on error type
+                if "ConnectError" in error_type or "Connection" in error_msg:
+                    msg += "Please check if the MCP server is running and the URL is correct."
+                elif "401" in error_msg or "403" in error_msg or "Unauthorized" in error_msg:
+                    msg += "Authentication required. Please provide valid authorization headers."
+                elif "timeout" in error_msg.lower():
+                    msg += "Connection timeout. Please check network connectivity."
+                else:
+                    msg += "Please check authentication settings and server configuration."
+
                 await self._process_mcp_tasks(None, msg)
 
         elif self._mcp_server.server_type == MCPServerType.STREAMABLE_HTTP:
@@ -95,7 +123,34 @@ class MCPToolCallSession(ToolCallSession):
                             await self._process_mcp_tasks(None, msg)
             except Exception as e:
                 logging.exception(e)
-                msg = "Connection failed (possibly due to auth error). Please check authentication settings first"
+                # Provide more detailed error message
+                error_type = type(e).__name__
+                error_msg = str(e)
+
+                # Handle ExceptionGroup (Python 3.11+)
+                if error_type == "ExceptionGroup":
+                    # Extract the actual exceptions from the group
+                    try:
+                        exceptions = e.exceptions if hasattr(e, 'exceptions') else [e]
+                        if exceptions:
+                            actual_error = exceptions[0]
+                            error_type = type(actual_error).__name__
+                            error_msg = str(actual_error)
+                    except Exception:
+                        pass
+
+                msg = f"Connection failed: {error_type}: {error_msg}. "
+
+                # Add specific hints based on error type
+                if "ConnectError" in error_type or "Connection" in error_msg:
+                    msg += "Please check if the MCP server is running and the URL is correct."
+                elif "401" in error_msg or "403" in error_msg or "Unauthorized" in error_msg:
+                    msg += "Authentication required. Please provide valid authorization headers."
+                elif "timeout" in error_msg.lower():
+                    msg += "Connection timeout. Please check network connectivity."
+                else:
+                    msg += "Please check authentication settings and server configuration."
+
                 await self._process_mcp_tasks(None, msg)
 
         else:

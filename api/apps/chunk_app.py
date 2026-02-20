@@ -47,6 +47,8 @@ def list_chunk():
     page = int(req.get("page", 1))
     size = int(req.get("size", 30))
     question = req.get("keywords", "")
+    include_vector = req.get("include_vector", False)  # Support vector metadata
+
     try:
         tenant_id = DocumentService.get_tenant_id(req["doc_id"])
         if not tenant_id:
@@ -60,6 +62,17 @@ def list_chunk():
         }
         if "available_int" in req:
             query["available_int"] = int(req["available_int"])
+
+        # If include_vector is requested, add common vector field dimensions to the query
+        if include_vector:
+            # Common embedding model dimensions
+            vector_fields = [f"q_{dim}_vec" for dim in [384, 512, 768, 1024, 1536, 2048, 3072, 4096]]
+            default_fields = ["docnm_kwd", "content_ltks", "kb_id", "img_id", "title_tks", "important_kwd", "position_int",
+                            "doc_id", "page_num_int", "top_int", "create_timestamp_flt", "knowledge_graph_kwd",
+                            "question_kwd", "question_tks", "doc_type_kwd",
+                            "available_int", "content_with_weight"]
+            query["fields"] = default_fields + vector_fields
+
         sres = settings.retriever.search(query, search.index_name(tenant_id), kb_ids, highlight=["content_ltks"])
         res = {"total": sres.total, "chunks": [], "doc": doc.to_dict()}
         for id in sres.ids:
@@ -78,6 +91,42 @@ def list_chunk():
             }
             assert isinstance(d["positions"], list)
             assert len(d["positions"]) == 0 or (isinstance(d["positions"][0], list) and len(d["positions"][0]) == 5)
+
+            # Add vector metadata if requested
+            if include_vector:
+                import numpy as np
+                import re
+
+                # Find vector field (format: q_{dim}_vec)
+                vector_field = None
+                vector_data = None
+                for key in sres.field[id].keys():
+                    if key.endswith("_vec") and key.startswith("q_"):
+                        vector_field = key
+                        vector_data = sres.field[id][key]
+                        break
+
+                if vector_data:
+                    # Extract dimension from field name
+                    match = re.search(r'q_(\d+)_vec', vector_field)
+                    vector_dim = int(match.group(1)) if match else len(vector_data)
+
+                    # Calculate vector statistics
+                    vec_array = np.array(vector_data)
+
+                    d["vector_metadata"] = {
+                        "dimension": vector_dim,
+                        "field_name": vector_field,
+                        "mean": float(np.mean(vec_array)),
+                        "std": float(np.std(vec_array)),
+                        "min": float(np.min(vec_array)),
+                        "max": float(np.max(vec_array)),
+                        "norm": float(np.linalg.norm(vec_array))
+                    }
+                    # Optionally include the full vector
+                    if req.get("include_full_vector", False):
+                        d["vector_metadata"]["vector"] = vector_data
+
             res["chunks"].append(d)
         return get_json_result(data=res)
     except Exception as e:

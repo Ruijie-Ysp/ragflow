@@ -170,8 +170,11 @@ class Base(ABC):
         return ans, total_token_count_from_response(response)
 
     def _chat_streamly(self, history, gen_conf, **kwargs):
+        from rag.utils import detailed_usage_from_response
+
         logging.info("[HISTORY STREAMLY]" + json.dumps(history, ensure_ascii=False, indent=4))
         reasoning_start = False
+        last_resp = None
 
         if kwargs.get("stop") or "stop" in gen_conf:
             response = self.client.chat.completions.create(model=self.model_name, messages=history, stream=True, **gen_conf, stop=kwargs.get("stop"))
@@ -179,6 +182,7 @@ class Base(ABC):
             response = self.client.chat.completions.create(model=self.model_name, messages=history, stream=True, **gen_conf)
 
         for resp in response:
+            last_resp = resp  # Keep track of the last response
             if not resp.choices:
                 continue
             if not resp.choices[0].delta.content:
@@ -203,6 +207,11 @@ class Base(ABC):
                 else:
                     ans += LENGTH_NOTIFICATION_EN
             yield ans, tol
+
+        # After streaming is complete, yield detailed usage from the last response
+        if last_resp:
+            detailed_usage = detailed_usage_from_response(last_resp)
+            yield None, detailed_usage  # Yield None for content, detailed usage dict
 
     def _length_stop(self, ans):
         if is_chinese([ans]):
@@ -463,14 +472,24 @@ class Base(ABC):
         gen_conf = self._clean_conf(gen_conf)
         ans = ""
         total_tokens = 0
+        detailed_usage = None
         try:
             for delta_ans, tol in self._chat_streamly(history, gen_conf, **kwargs):
+                if delta_ans is None and isinstance(tol, dict):
+                    # This is the detailed usage info
+                    detailed_usage = tol
+                    break
                 yield delta_ans
-                total_tokens += tol
+                if isinstance(tol, int):
+                    total_tokens += tol
         except openai.APIError as e:
             yield ans + "\n**ERROR**: " + str(e)
 
-        yield total_tokens
+        # Yield detailed usage if available, otherwise yield total_tokens
+        if detailed_usage:
+            yield detailed_usage
+        else:
+            yield total_tokens
 
     def _calculate_dynamic_ctx(self, history):
         """Calculate dynamic context window size"""

@@ -18,7 +18,7 @@ import { useNavigate } from 'umi';
 import { KnowledgeRouteKey } from '../../constant';
 
 import { isEmpty } from 'lodash';
-import { GitGraph } from 'lucide-react';
+import { Database, GitGraph } from 'lucide-react';
 import styles from './index.less';
 
 const KnowledgeSidebar = () => {
@@ -76,6 +76,7 @@ const KnowledgeSidebar = () => {
         KnowledgeRouteKey.Configuration,
         <ConfigurationIcon />,
       ),
+      getItem(KnowledgeRouteKey.Corpus, KnowledgeRouteKey.Corpus, <Database />),
     ];
 
     if (!isEmpty(data?.graph)) {

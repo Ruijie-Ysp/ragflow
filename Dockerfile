@@ -102,19 +102,20 @@ RUN cargo --version && rustc --version
 # Add msssql ODBC driver
 # macOS ARM64 environment, install msodbcsql18.
 # general x86_64 environment, install msodbcsql17.
+# Temporarily skip ODBC driver installation to avoid network issues
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
-    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
-    apt update && \
-    arch="$(uname -m)"; \
-    if [ "$arch" = "arm64" ] || [ "$arch" = "aarch64" ]; then \
-        # ARM64 (macOS/Apple Silicon or Linux aarch64)
-        ACCEPT_EULA=Y apt install -y unixodbc-dev msodbcsql18; \
-    else \
-        # x86_64 or others
-        ACCEPT_EULA=Y apt install -y unixodbc-dev msodbcsql17; \
-    fi || \
-    { echo "Failed to install ODBC driver"; exit 1; }
+    echo "Skipping ODBC driver installation" && \
+    apt update && apt install -y unixodbc-dev || true
+    # Original installation (commented out due to network issues):
+    # curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    # curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    # apt update && \
+    # arch="$(uname -m)"; \
+    # if [ "$arch" = "arm64" ] || [ "$arch" = "aarch64" ]; then \
+    #     ACCEPT_EULA=Y apt install -y unixodbc-dev msodbcsql18; \
+    # else \
+    #     ACCEPT_EULA=Y apt install -y unixodbc-dev msodbcsql17; \
+    # fi
 
 
 
@@ -163,8 +164,17 @@ RUN --mount=type=cache,id=ragflow_uv,target=/root/.cache/uv,sharing=locked \
 
 COPY web web
 COPY docs docs
+
+# Build frontend during Docker image build
+# This ensures all frontend changes are automatically included
 RUN --mount=type=cache,id=ragflow_npm,target=/root/.npm,sharing=locked \
-    cd web && npm install && npm run build
+    cd web && \
+    if [ "$NEED_MIRROR" == "1" ]; then \
+        npm config set registry https://registry.npmmirror.com; \
+    fi && \
+    npm install && \
+    npm run build && \
+    echo "Frontend build completed successfully"
 
 COPY .git /ragflow/.git
 

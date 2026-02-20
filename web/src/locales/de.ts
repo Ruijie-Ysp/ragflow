@@ -107,15 +107,15 @@ export default {
       action: 'Aktion',
       parsingStatus: 'Analysestatus',
       parsingStatusTip:
-        'Die Verarbeitungszeit für Dokumente variiert je nach mehreren Faktoren. Das Aktivieren von Funktionen wie Knowledge Graph, RAPTOR, automatischer Frage- oder Schlüsselwort-Extraktion verlängert die Bearbeitungszeit deutlich. Wenn der Fortschrittsbalken stehen bleibt, konsultieren Sie bitte diese beiden FAQs: https://ragflow.io/docs/dev/faq#why-does-my-document-parsing-stall-at-under-one-percent.',
+        'Die Verarbeitungszeit für Dokumente variiert je nach mehreren Faktoren. Das Aktivieren von Funktionen wie Knowledge Graph, RAPTOR, automatischer Frage- oder Schlüsselwort-Extraktion verlängert die Bearbeitungszeit deutlich.',
       processBeginAt: 'Beginn',
       processDuration: 'Dauer',
       progressMsg: 'Fortschritt',
       testingDescription:
-        'Führen Sie einen Abruftest durch, um zu prüfen, ob RAGFlow die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
+        'Führen Sie einen Abruftest durch, um zu prüfen, ob das System die beabsichtigten Inhalte für das LLM wiederherstellen kann.',
       similarityThreshold: 'Ähnlichkeitsschwelle',
       similarityThresholdTip:
-        'RAGFlow verwendet entweder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit oder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Neuordnungsbewertung während des Abrufs. Dieser Parameter legt den Schwellenwert für Ähnlichkeiten zwischen der Benutzeranfrage und den Chunks fest. Jeder Chunk mit einer Ähnlichkeitsbewertung unter diesem Schwellenwert wird von den Ergebnissen ausgeschlossen. Standardmäßig ist der Schwellenwert auf 0,2 festgelegt. Das bedeutet, dass nur Textblöcke mit einer hybriden Ähnlichkeitsbewertung von 20 oder höher abgerufen werden.',
+        'Das System verwendet entweder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit oder eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Neuordnungsbewertung während des Abrufs. Dieser Parameter legt den Schwellenwert für Ähnlichkeiten zwischen der Benutzeranfrage und den Chunks fest. Jeder Chunk mit einer Ähnlichkeitsbewertung unter diesem Schwellenwert wird von den Ergebnissen ausgeschlossen. Standardmäßig ist der Schwellenwert auf 0,2 festgelegt. Das bedeutet, dass nur Textblöcke mit einer hybriden Ähnlichkeitsbewertung von 20 oder höher abgerufen werden.',
       vectorSimilarityWeight: 'Schlüsselwortähnlichkeitsgewicht',
       vectorSimilarityWeightTip:
         'Dies legt das Gewicht der Schlüsselwortähnlichkeit im kombinierten Ähnlichkeitswert fest, entweder in Verbindung mit der Vektorkosinus-Ähnlichkeit oder mit der Neuordnungsbewertung. Die Summe der beiden Gewichte muss 1,0 ergeben.',
@@ -144,7 +144,7 @@ export default {
       toMessage: 'Endseitennummer fehlt (ausgeschlossen)',
       layoutRecognize: 'Dokumentenparser',
       layoutRecognizeTip:
-        'Verwendet ein visuelles Modell für die PDF-Layout-Analyse, um Dokumententitel, Textblöcke, Bilder und Tabellen effektiv zu lokalisieren. Wenn die einfache Option gewählt wird, wird nur der reine Text im PDF abgerufen. Bitte beachten Sie, dass diese Option derzeit NUR für PDF-Dokumente funktioniert. Weitere Informationen finden Sie unter https://ragflow.io/docs/dev/select_pdf_parser.',
+        'Verwendet ein visuelles Modell für die PDF-Layout-Analyse, um Dokumententitel, Textblöcke, Bilder und Tabellen effektiv zu lokalisieren. Wenn die einfache Option gewählt wird, wird nur der reine Text im PDF abgerufen. Bitte beachten Sie, dass diese Option derzeit NUR für PDF-Dokumente funktioniert.',
       taskPageSize: 'Aufgabenseitengröße',
       taskPageSizeMessage: 'Bitte geben Sie die Größe der Aufgabenseite ein!',
       taskPageSizeTip:
@@ -157,14 +157,14 @@ export default {
       changeSpecificCategory: 'Spezifische Kategorie ändern',
       uploadTitle: 'Ziehen Sie Ihre Datei hierher, um sie hochzuladen',
       uploadDescription:
-        'RAGFlow unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes RAGFlow: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für demo.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
+        'Unterstützt Einzel- oder Stapel-Uploads. Das Hochladen von Firmendaten oder anderen verbotenen Dateien ist strikt untersagt.',
       chunk: 'Chunk',
       bulk: 'Masse',
       cancel: 'Abbrechen',
       rerankModel: 'Neuordnungsmodell',
       rerankPlaceholder: 'Bitte auswählen',
       rerankTip:
-        'Wenn leer gelassen, verwendet RAGFlow eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit; wenn ein Neuordnungsmodell ausgewählt wird, ersetzt eine gewichtete Neuordnungsbewertung die gewichtete Vektorkosinus-Ähnlichkeit. Bitte beachten Sie, dass die Verwendung eines Neuordnungsmodells die Antwortzeit des Systems erheblich erhöht.',
+        'Wenn leer gelassen, verwendet das System eine Kombination aus gewichteter Schlüsselwortähnlichkeit und gewichteter Vektorkosinus-Ähnlichkeit; wenn ein Neuordnungsmodell ausgewählt wird, ersetzt eine gewichtete Neuordnungsbewertung die gewichtete Vektorkosinus-Ähnlichkeit. Bitte beachten Sie, dass die Verwendung eines Neuordnungsmodells die Antwortzeit des Systems erheblich erhöht.',
       topK: 'Top-K',
       topKTip:
         'In Verbindung mit dem Rerank model wird mit dieser Einstellung die Anzahl der Textblöcke festgelegt, die an das angegebene reranking model gesendet werden.',
@@ -173,13 +173,13 @@ export default {
         'Ein Trennzeichen oder Separator kann aus einem oder mehreren Sonderzeichen bestehen. Bei mehreren Zeichen stellen Sie sicher, dass sie in Backticks (` `) eingeschlossen sind. Wenn Sie beispielsweise Ihre Trennzeichen so konfigurieren: \\n`##`;, dann werden Ihre Texte an Zeilenumbrüchen, doppelten Rautenzeichen (##) oder Semikolons getrennt. Setzen Sie Trennzeichen nur nachdem Sie das Mechanismus der Textsegmentierung und -chunking verstanden haben.',
       html4excel: 'Excel zu HTML',
       html4excelTip:
-        'Verwenden Sie dies zusammen mit der General-Schnittmethode. Wenn deaktiviert, werden Tabellenkalkulationsdateien (XLSX, XLS (Excel 97-2003)) zeilenweise in Schlüssel-Wert-Paare analysiert. Wenn aktiviert, werden Tabellenkalkulationsdateien in HTML-Tabellen umgewandelt. Wenn die ursprüngliche Tabelle mehr als 12 Zeilen enthält, teilt das System sie automatisch alle 12 Zeilen in mehrere HTML-Tabellen auf. Für weitere Informationen siehe https://ragflow.io/docs/dev/enable_excel2html.',
+        'Verwenden Sie dies zusammen mit der General-Schnittmethode. Wenn deaktiviert, werden Tabellenkalkulationsdateien (XLSX, XLS (Excel 97-2003)) zeilenweise in Schlüssel-Wert-Paare analysiert. Wenn aktiviert, werden Tabellenkalkulationsdateien in HTML-Tabellen umgewandelt. Wenn die ursprüngliche Tabelle mehr als 12 Zeilen enthält, teilt das System sie automatisch alle 12 Zeilen in mehrere HTML-Tabellen auf.',
       autoKeywords: 'Auto-Schlüsselwort',
       autoKeywordsTip:
-        'Extrahieren Sie automatisch N Schlüsselwörter für jeden Abschnitt, um deren Ranking in Abfragen mit diesen Schlüsselwörtern zu verbessern. Beachten Sie, dass zusätzliche Tokens vom in den "Systemmodelleinstellungen" angegebenen Chat-Modell verbraucht werden. Sie können die hinzugefügten Schlüsselwörter eines Abschnitts in der Abschnittsliste überprüfen oder aktualisieren. Für weitere Informationen siehe https://ragflow.io/docs/dev/autokeyword_autoquestion.',
+        'Extrahieren Sie automatisch N Schlüsselwörter für jeden Abschnitt, um deren Ranking in Abfragen mit diesen Schlüsselwörtern zu verbessern. Beachten Sie, dass zusätzliche Tokens vom in den "Systemmodelleinstellungen" angegebenen Chat-Modell verbraucht werden. Sie können die hinzugefügten Schlüsselwörter eines Abschnitts in der Abschnittsliste überprüfen oder aktualisieren.',
       autoQuestions: 'Auto-Frage',
       autoQuestionsTip:
-        'Um die Ranking-Ergebnisse zu verbessern, extrahieren Sie N Fragen für jeden Wissensdatenbank-Chunk mithilfe des im "Systemmodell-Setup" definierten Chatmodells. Beachten Sie, dass dies zusätzliche Token verbraucht. Die Ergebnisse können in der Chunk-Liste eingesehen und bearbeitet werden. Fehler bei der Fragenextraktion blockieren den Chunking-Prozess nicht; leere Ergebnisse werden dem ursprünglichen Chunk hinzugefügt. Für weitere Informationen siehe https://ragflow.io/docs/dev/autokeyword_autoquestion.',
+        'Um die Ranking-Ergebnisse zu verbessern, extrahieren Sie N Fragen für jeden Wissensdatenbank-Chunk mithilfe des im "Systemmodell-Setup" definierten Chatmodells. Beachten Sie, dass dies zusätzliche Token verbraucht. Die Ergebnisse können in der Chunk-Liste eingesehen und bearbeitet werden. Fehler bei der Fragenextraktion blockieren den Chunking-Prozess nicht; leere Ergebnisse werden dem ursprünglichen Chunk hinzugefügt.',
       redo: 'Möchten Sie die vorhandenen {{chunkNum}} Chunks löschen?',
       setMetaData: 'Metadaten festlegen',
       pleaseInputJson: 'Bitte JSON eingeben',
@@ -334,8 +334,7 @@ export default {
       <i>Textzeilen, die nicht den obigen Regeln entsprechen, werden ignoriert.</i>
   `,
       useRaptor: 'RAPTOR zur Verbesserung des Abrufs verwenden',
-      useRaptorTip:
-        'RAPTOR für Multi-Hop-Frage-Antwort-Aufgaben aktivieren. Details unter https://ragflow.io/docs/dev/enable_raptor.',
+      useRaptorTip: 'RAPTOR für Multi-Hop-Frage-Antwort-Aufgaben aktivieren.',
       prompt: 'Prompt',
       promptTip:
         'Verwenden Sie den Systemprompt, um die Aufgabe für das LLM zu beschreiben, festzulegen, wie es antworten soll, und andere verschiedene Anforderungen zu skizzieren. Der Systemprompt wird oft in Verbindung mit Schlüsseln (Variablen) verwendet, die als verschiedene Dateninputs für das LLM dienen. Verwenden Sie einen Schrägstrich `/` oder die (x)-Schaltfläche, um die zu verwendenden Schlüssel anzuzeigen.',
@@ -360,7 +359,7 @@ export default {
       vietnamese: 'Vietnamesisch',
       pageRank: 'PageRank',
       pageRankTip:
-        'Sie können während des Abrufs bestimmten Wissensdatenbanken eine höhere PageRank-Bewertung zuweisen. Die entsprechende Bewertung wird zu den hybriden Ähnlichkeitswerten der abgerufenen Chunks aus diesen Wissensdatenbanken addiert, wodurch deren Ranking erhöht wird. Weitere Informationen finden Sie unter https://ragflow.io/docs/dev/set_page_rank.',
+        'Sie können während des Abrufs bestimmten Wissensdatenbanken eine höhere PageRank-Bewertung zuweisen. Die entsprechende Bewertung wird zu den hybriden Ähnlichkeitswerten der abgerufenen Chunks aus diesen Wissensdatenbanken addiert, wodurch deren Ranking erhöht wird.',
       tagName: 'Tag',
       frequency: 'Häufigkeit',
       searchTags: 'Tags durchsuchen',
@@ -377,17 +376,17 @@ export default {
     <li>Sie müssen Tag-Sets in bestimmten Formaten hochladen, bevor Sie die Auto-Tag-Funktion ausführen.</li>
     <li>Die Auto-Schlüsselwort-Funktion ist vom LLM abhängig und verbraucht eine erhebliche Anzahl an Tokens.</li>
   </ul>
-  <p>Siehe https://ragflow.io/docs/dev/use_tag_sets für Details.</p>
+  <p>Weitere Details sind verfügbar.</p>
         `,
       topnTags: 'Top-N Tags',
       tags: 'Tags',
       addTag: 'Tag hinzufügen',
       useGraphRag: 'Wissensgraph extrahieren',
       useGraphRagTip:
-        'Erstellen Sie einen Wissensgraph über Dateiabschnitte der aktuellen Wissensbasis, um die Beantwortung von Fragen mit mehreren Schritten und verschachtelter Logik zu verbessern. Weitere Informationen finden Sie unter https://ragflow.io/docs/dev/construct_knowledge_graph.',
+        'Erstellen Sie einen Wissensgraph über Dateiabschnitte der aktuellen Wissensbasis, um die Beantwortung von Fragen mit mehreren Schritten und verschachtelter Logik zu verbessern.',
       graphRagMethod: 'Methode',
-      graphRagMethodTip: `Light: (Standard) Verwendet von github.com/HKUDS/LightRAG bereitgestellte Prompts, um Entitäten und Beziehungen zu extrahieren. Diese Option verbraucht weniger Tokens, weniger Speicher und weniger Rechenressourcen.</br>
-          General: Verwendet von github.com/microsoft/graphrag bereitgestellte Prompts, um Entitäten und Beziehungen zu extrahieren`,
+      graphRagMethodTip: `Light: (Standard) Verwendet optimierte Prompts, um Entitäten und Beziehungen zu extrahieren (geringerer Verbrauch).</br>
+          General: Verwendet generische Prompts, um Entitäten und Beziehungen zu extrahieren`,
       resolution: 'Entitätsauflösung',
       resolutionTip: `Ein Entitäts-Deduplizierungsschalter. Wenn aktiviert, wird das LLM ähnliche Entitäten kombinieren - z.B. '2025' und 'das Jahr 2025' oder 'IT' und 'Informationstechnologie' - um einen genaueren Graphen zu konstruieren`,
       community: 'Generierung von Gemeinschaftsberichten',
@@ -458,7 +457,7 @@ export default {
         'Nicht alle Chunks mit einem Ähnlichkeitswert über dem "Ähnlichkeitsschwellenwert" werden an das LLM gesendet. Dies wählt die "Top N" Chunks aus den abgerufenen aus.',
       variable: 'Variable',
       variableTip:
-        'In Kombination mit den APIs zur Verwaltung von Chat-Assistenten von RAGFlow können Variablen dazu beitragen, flexiblere System-Prompt-Strategien zu entwickeln. Die definierten Variablen werden von „System-Prompt“ als Teil der Prompts für das LLM verwendet. {knowledge} ist eine spezielle reservierte Variable, die Teile darstellt, die aus den angegebenen Wissensbasen abgerufen werden, und alle Variablen sollten in geschweiften Klammern {} im „System-Prompt“ eingeschlossen werden. Weitere Informationen finden Sie unter https://ragflow.io/docs/dev/set_chat_variables.',
+        'In Kombination mit den APIs zur Verwaltung von Chat-Assistenten können Variablen dazu beitragen, flexiblere System-Prompt-Strategien zu entwickeln. Die definierten Variablen werden vom „System-Prompt“ als Teil der Prompts für das LLM verwendet. {knowledge} ist eine spezielle, reservierte Variable, die aus den angegebenen Wissensbasen abgerufene Segmente darstellt. Alle Variablen sollten im „System-Prompt“ in geschweiften Klammern {} eingeschlossen werden.',
       add: 'Hinzufügen',
       key: 'Schlüssel',
       optional: 'Optional',
@@ -526,7 +525,7 @@ export default {
       extensionTitle: 'Chrome-Erweiterung',
       tokenError: 'Bitte erstellen Sie zuerst einen API-Schlüssel.',
       betaError:
-        'Bitte erwerben Sie zuerst einen RAGFlow-API-Schlüssel auf der Systemeinstellungsseite.',
+        'Bitte erwerben Sie zuerst einen API-Schlüssel auf der Systemeinstellungsseite.',
       searching: 'Suche...',
       parsing: 'Analysiere',
       uploading: 'Hochladen',
@@ -635,19 +634,18 @@ export default {
         'Das Standard-Chat-LLM, das alle neu erstellten Wissensdatenbanken verwenden werden.',
       embeddingModel: 'Embedding-Modell',
       embeddingModelTip:
-        'Das Standard-Einbettungsmodell für jede neu erstellte Wissensdatenbank. Wenn Sie kein Einbettungsmodell in der Dropdown-Liste finden, prüfen Sie, ob Sie die RAGFlow Slim Edition verwenden (die keine Einbettungsmodelle enthält), oder überprüfen Sie https://ragflow.io/docs/dev/supported_models, um zu sehen, ob Ihr Modellanbieter dieses Modell unterstützt.',
+        'Das Standard-Einbettungsmodell für jede neu erstellte Wissensdatenbank.',
       img2txtModel: 'Img2txt-Modell',
       img2txtModelTip:
-        'Das Standardmodell img2txt für jede neu erstellte Wissensdatenbank. Es beschreibt ein Bild oder Video. Wenn Sie kein Modell im Dropdown-Menü finden können, überprüfen Sie https://ragflow.io/docs/dev/supported_models, um zu sehen, ob Ihr Modellanbieter dieses Modell unterstützt.',
+        'Das Standardmodell img2txt für jede neu erstellte Wissensdatenbank. Es beschreibt ein Bild oder Video.',
       sequence2txtModel: 'Sequence2txt-Modell',
       sequence2txtModelTip:
-        'Das Standard-ASR-Modell, das alle neu erstellten Wissensdatenbanken verwenden werden. Verwenden Sie dieses Modell, um Stimmen in entsprechenden Text zu übersetzen. Wenn Sie kein Modell im Dropdown-Menü finden können, überprüfen Sie https://ragflow.io/docs/dev/supported_models, um zu sehen, ob Ihr Modellanbieter dieses Modell unterstützt.',
+        'Das Standard-ASR-Modell, das alle neu erstellten Wissensdatenbanken verwenden werden. Verwenden Sie dieses Modell, um Stimmen in entsprechenden Text zu übersetzen.',
       rerankModel: 'Rerank-Modell',
       rerankModelTip:
-        'Das Standard-Rerank-Modell zum Reranking von Textabschnitten. Wenn Sie kein Modell im Dropdown-Menü finden, überprüfen Sie https://ragflow.io/docs/dev/supported_models, um zu sehen, ob Ihr Modellanbieter dieses Modell unterstützt.',
+        'Das Standard-Rerank-Modell zum Reranking von Textabschnitten.',
       ttsModel: 'TTS-Modell',
-      ttsModelTip:
-        'Das Standard-Text-to-Speech-Modell. Wenn Sie kein Modell im Dropdown-Menü finden, überprüfen Sie https://ragflow.io/docs/dev/supported_models, um zu sehen, ob Ihr Modellanbieter dieses Modell unterstützt.',
+      ttsModelTip: 'Das Standard-Text-to-Speech-Modell.',
       workspace: 'Arbeitsbereich',
       upgrade: 'Upgrade',
       addLlmTitle: 'LLM hinzufügen',
@@ -789,7 +787,7 @@ export default {
       directory: 'Verzeichnis',
       uploadTitle: 'Ziehen Sie Ihre Datei hierher, um sie hochzuladen',
       uploadDescription:
-        'RAGFlow unterstützt das Hochladen von Dateien einzeln oder in Batches. Für lokal bereitgestelltes RAGFlow: Die maximale Dateigröße pro Upload beträgt 1 GB, mit einem Batch-Upload-Limit von 32 Dateien. Es gibt keine Begrenzung der Gesamtanzahl an Dateien pro Konto. Für demo.ragflow.io: Die maximale Dateigröße pro Upload beträgt 10 MB, wobei jede Datei nicht größer als 10 MB sein darf und maximal 128 Dateien pro Konto erlaubt sind.',
+        'Unterstützt Einzel- oder Stapel-Uploads. Das Hochladen von Firmendaten oder anderen verbotenen Dateien ist strikt untersagt.',
       local: 'Lokale Uploads',
       s3: 'S3-Uploads',
       preview: 'Vorschau',
@@ -908,7 +906,7 @@ export default {
       targetLang: 'Zielsprache',
       gitHub: 'GitHub',
       gitHubDescription:
-        'Eine Komponente, die nach Repositories auf https://github.com/ sucht. Sie können Top N verwenden, um die Anzahl der Suchergebnisse anzugeben.',
+        'Eine Komponente, die nach Repositories sucht. Sie können Top N verwenden, um die Anzahl der Suchergebnisse anzugeben.',
       baiduFanyi: 'BaiduFanyi',
       baiduFanyiDescription:
         'Eine Komponente, die spezialisierte Übersetzungen von https://fanyi.baidu.com/ abruft.',

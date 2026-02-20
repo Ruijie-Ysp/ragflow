@@ -1212,4 +1212,157 @@ def migrate_db():
         migrate(migrator.alter_column_type("tenant_llm", "api_key", TextField(null=True, help_text="API KEY")))
     except Exception:
         pass
+
+    # Add columns for 5 types of medical data to corpus_database_config table
+    try:
+        migrate(migrator.add_column("corpus_database_config", "patient_table", CharField(max_length=255, null=True, help_text="Patient table name")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "patient_field", CharField(max_length=255, null=True, help_text="Patient primary field")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "order_table", CharField(max_length=255, null=True, help_text="Medical order table name")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "order_field", CharField(max_length=255, null=True, help_text="Medical order primary field")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "record_table", CharField(max_length=255, null=True, help_text="Medical record table name")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "record_field", CharField(max_length=255, null=True, help_text="Medical record primary field")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "exam_table", CharField(max_length=255, null=True, help_text="Examination report table name")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "exam_field", CharField(max_length=255, null=True, help_text="Examination report primary field")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "lab_table", CharField(max_length=255, null=True, help_text="Lab report table name")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("corpus_database_config", "lab_field", CharField(max_length=255, null=True, help_text="Lab report primary field")))
+    except Exception:
+        pass
+
+    # Add parse_method column to literature_process table
+    try:
+        migrate(migrator.add_column("literature_process", "parse_method", CharField(max_length=32, null=False, default="MinerU", help_text="解析方法: MinerU, DeepDOC, PlainText, Table")))
+    except Exception:
+        pass
+
+    # Add input_source and segment_info columns to literature_agent_result table
+    try:
+        migrate(migrator.add_column("literature_agent_result", "input_source", CharField(max_length=128, null=True, default="markdown", help_text="输入来源: markdown | result:{result_id}")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("literature_agent_result", "segment_info", TextField(null=True, help_text="分段处理信息(JSON)")))
+    except Exception:
+        pass
+
     logging.disable(logging.NOTSET)
+
+
+class CorpusDatabaseConfig(DataBaseModel):
+    """Database configuration for patient data corpus with 5 medical data types"""
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True)
+    host = CharField(max_length=255, null=False, help_text="Database host")
+    port = IntegerField(default=3306, help_text="Database port")
+    username = CharField(max_length=255, null=False, help_text="Database username")
+    password = TextField(null=False, help_text="Database password")
+    database = CharField(max_length=255, null=False, help_text="Database name")
+
+    # Patient table configuration
+    patient_table = CharField(max_length=255, null=True, help_text="Patient table name")
+    patient_field = CharField(max_length=255, null=True, help_text="Patient primary field")
+
+    # Medical order table configuration
+    order_table = CharField(max_length=255, null=True, help_text="Medical order table name")
+    order_field = CharField(max_length=255, null=True, help_text="Medical order primary field")
+
+    # Medical record table configuration
+    record_table = CharField(max_length=255, null=True, help_text="Medical record table name")
+    record_field = CharField(max_length=255, null=True, help_text="Medical record primary field")
+
+    # Examination report table configuration
+    exam_table = CharField(max_length=255, null=True, help_text="Examination report table name")
+    exam_field = CharField(max_length=255, null=True, help_text="Examination report primary field")
+
+    # Lab report table configuration
+    lab_table = CharField(max_length=255, null=True, help_text="Lab report table name")
+    lab_field = CharField(max_length=255, null=True, help_text="Lab report primary field")
+
+    status = CharField(max_length=1, null=True, help_text="is it validate(0: wasted, 1: validate)", default="1", index=True)
+
+    class Meta:
+        db_table = "corpus_database_config"
+
+
+class LiteratureProcess(DataBaseModel):
+    """文献处理主表 - 用于存储 PDF 文献及其处理结果"""
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=False, index=True, help_text="租户ID")
+    created_by = CharField(max_length=32, null=False, index=True, help_text="创建者ID")
+    name = CharField(max_length=255, null=False, index=True, help_text="文件名")
+
+    # 原始文件信息
+    location = CharField(max_length=255, null=True, help_text="MinIO存储位置", index=True)
+    size = IntegerField(default=0, help_text="文件大小(字节)")
+
+    # 解析方法: MinerU, DeepDOC, PlainText, Table
+    parse_method = CharField(max_length=32, default="MinerU", index=True, help_text="解析方法")
+
+    # 处理结果
+    markdown_content = LongTextField(null=True, help_text="Markdown内容")
+    txt_content = LongTextField(null=True, help_text="纯文本内容")
+
+    # 处理状态: 0-待处理, 1-处理中, 2-成功, 3-失败
+    process_status = CharField(max_length=1, default="0", index=True, help_text="处理状态")
+    process_message = TextField(null=True, help_text="处理消息/错误信息")
+    process_begin_at = DateTimeField(null=True, index=True)
+    process_duration = FloatField(default=0, help_text="处理耗时(秒)")
+
+    # 权限控制: me|team
+    permission = CharField(max_length=16, null=False, default="me", index=True, help_text="权限控制")
+
+    status = CharField(max_length=1, null=True, default="1", index=True, help_text="有效状态(0:无效, 1:有效)")
+
+    class Meta:
+        db_table = "literature_process"
+
+
+class LiteratureAgentResult(DataBaseModel):
+    """智能体处理结果表 - 支持多版本结果对比"""
+    id = CharField(max_length=32, primary_key=True)
+    literature_id = CharField(max_length=32, null=False, index=True, help_text="关联文献ID")
+    agent_id = CharField(max_length=32, null=False, index=True, help_text="使用的智能体ID")
+    agent_title = CharField(max_length=255, null=True, help_text="智能体名称")
+    version = IntegerField(default=1, index=True, help_text="版本号")
+
+    input_content = LongTextField(null=True, help_text="输入内容(TXT)")
+    output_content = LongTextField(null=True, help_text="智能体输出结果")
+
+    # 输入来源: markdown | result:{result_id}
+    input_source = CharField(max_length=128, null=True, default="markdown", help_text="输入来源")
+    # 分段处理信息 (JSON): {"total_chars": 25000, "segment_count": 3, "source": "markdown", "source_label": "原始Markdown"}
+    segment_info = TextField(null=True, help_text="分段处理信息(JSON)")
+
+    # 处理状态: 0-处理中, 1-成功, 2-失败
+    status = CharField(max_length=1, default="0", index=True, help_text="处理状态")
+    error_message = TextField(null=True, help_text="错误信息")
+    process_duration = FloatField(default=0, help_text="处理耗时(秒)")
+
+    class Meta:
+        db_table = "literature_agent_result"

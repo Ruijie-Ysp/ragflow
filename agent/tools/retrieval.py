@@ -111,11 +111,11 @@ class Retrieval(ToolBase, ABC):
 
         embd_mdl = None
         if embd_nms:
-            embd_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.EMBEDDING, embd_nms[0])
+            embd_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.EMBEDDING, embd_nms[0], agent_id=self._canvas.get_agent_id())
 
         rerank_mdl = None
         if self._param.rerank_id:
-            rerank_mdl = LLMBundle(kbs[0].tenant_id, LLMType.RERANK, self._param.rerank_id)
+            rerank_mdl = LLMBundle(kbs[0].tenant_id, LLMType.RERANK, self._param.rerank_id, agent_id=self._canvas.get_agent_id())
 
         vars = self.get_input_elements_from_text(kwargs["query"])
         vars = {k:o["value"] for k,o in vars.items()}
@@ -125,7 +125,7 @@ class Retrieval(ToolBase, ABC):
         if self._param.meta_data_filter!={}:
             metas = DocumentService.get_meta_by_kbs(kb_ids)
             if self._param.meta_data_filter.get("method") == "auto":
-                chat_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.CHAT)
+                chat_mdl = LLMBundle(self._canvas.get_tenant_id(), LLMType.CHAT, agent_id=self._canvas.get_agent_id())
                 filters = gen_meta_filter(chat_mdl, metas, query)
                 doc_ids.extend(meta_filter(metas, filters))
                 if not doc_ids:
@@ -136,7 +136,7 @@ class Retrieval(ToolBase, ABC):
                     doc_ids = None
 
         if self._param.cross_languages:
-            query = cross_languages(kbs[0].tenant_id, None, query, self._param.cross_languages)
+            query = cross_languages(kbs[0].tenant_id, None, query, self._param.cross_languages, agent_id=self._canvas.get_agent_id())
 
         if kbs:
             query = re.sub(r"^user[:：\s]*", "", query, flags=re.IGNORECASE)
@@ -155,7 +155,7 @@ class Retrieval(ToolBase, ABC):
                 rank_feature=label_question(query, kbs),
             )
             if self._param.toc_enhance:
-                chat_mdl = LLMBundle(self._canvas._tenant_id, LLMType.CHAT)
+                chat_mdl = LLMBundle(self._canvas._tenant_id, LLMType.CHAT, agent_id=self._canvas.get_agent_id())
                 cks = settings.retriever.retrieval_by_toc(query, kbinfos["chunks"], [kb.tenant_id for kb in kbs], chat_mdl, self._param.top_n)
                 if cks:
                     kbinfos["chunks"] = cks
@@ -164,18 +164,11 @@ class Retrieval(ToolBase, ABC):
                                                        [kb.tenant_id for kb in kbs],
                                                        kb_ids,
                                                        embd_mdl,
-                                                       LLMBundle(self._canvas.get_tenant_id(), LLMType.CHAT))
+                                                       LLMBundle(self._canvas.get_tenant_id(), LLMType.CHAT, agent_id=self._canvas.get_agent_id()))
                 if ck["content_with_weight"]:
                     kbinfos["chunks"].insert(0, ck)
         else:
             kbinfos = {"chunks": [], "doc_aggs": []}
-
-        if self._param.use_kg and kbs:
-            ck = settings.kg_retriever.retrieval(query, [kb.tenant_id for kb in kbs], filtered_kb_ids, embd_mdl, LLMBundle(kbs[0].tenant_id, LLMType.CHAT))
-            if ck["content_with_weight"]:
-                ck["content"] = ck["content_with_weight"]
-                del ck["content_with_weight"]
-                kbinfos["chunks"].insert(0, ck)
 
         for ck in kbinfos["chunks"]:
             if "vector" in ck:

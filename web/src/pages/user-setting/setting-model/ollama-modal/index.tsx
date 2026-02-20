@@ -22,28 +22,6 @@ type FieldType = IAddLlmRequestBody & {
 
 const { Option } = Select;
 
-const llmFactoryToUrlMap = {
-  [LLMFactory.Ollama]:
-    'https://github.com/infiniflow/ragflow/blob/main/docs/guides/models/deploy_local_llm.mdx',
-  [LLMFactory.Xinference]:
-    'https://inference.readthedocs.io/en/latest/user_guide',
-  [LLMFactory.ModelScope]:
-    'https://www.modelscope.cn/docs/model-service/API-Inference/intro',
-  [LLMFactory.LocalAI]: 'https://localai.io/docs/getting-started/models/',
-  [LLMFactory.LMStudio]: 'https://lmstudio.ai/docs/basics',
-  [LLMFactory.OpenAiAPICompatible]:
-    'https://platform.openai.com/docs/models/gpt-4',
-  [LLMFactory.TogetherAI]: 'https://docs.together.ai/docs/deployment-options',
-  [LLMFactory.Replicate]: 'https://replicate.com/docs/topics/deployments',
-  [LLMFactory.OpenRouter]: 'https://openrouter.ai/docs',
-  [LLMFactory.HuggingFace]:
-    'https://huggingface.co/docs/text-embeddings-inference/quick_tour',
-  [LLMFactory.GPUStack]: 'https://docs.gpustack.ai/latest/quickstart',
-  [LLMFactory.VLLM]: 'https://docs.vllm.ai/en/latest/',
-  [LLMFactory.TokenPony]: 'https://docs.tokenpony.cn/#/',
-};
-type LlmFactory = keyof typeof llmFactoryToUrlMap;
-
 const OllamaModal = ({
   visible,
   hideModal,
@@ -101,9 +79,6 @@ const OllamaModal = ({
     }
   }, [visible, editMode, initialValues, form]);
 
-  const url =
-    llmFactoryToUrlMap[llmFactory as LlmFactory] ||
-    'https://github.com/infiniflow/ragflow/blob/main/docs/guides/models/deploy_local_llm.mdx';
   const optionsMap = {
     [LLMFactory.HuggingFace]: [
       { value: 'embedding', label: 'embedding' },
@@ -158,10 +133,7 @@ const OllamaModal = ({
       okButtonProps={{ loading }}
       footer={(originNode: React.ReactNode) => {
         return (
-          <Flex justify={'space-between'}>
-            <a href={url} target="_blank" rel="noreferrer">
-              {t('ollamaLink', { name: llmFactory })}
-            </a>
+          <Flex justify={'end'}>
             <Space>{originNode}</Space>
           </Flex>
         );

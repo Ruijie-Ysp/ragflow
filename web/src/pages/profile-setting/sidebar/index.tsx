@@ -14,6 +14,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useHandleMenuClick } from './hooks';
 
 const menuItems = [
@@ -49,6 +50,7 @@ const menuItems = [
 ];
 
 export function SideBar() {
+  const { t } = useTranslation();
   const pathName = useSecondPathName();
   const { data: userInfo } = useFetchUserInfo();
   const { handleMenuClick, active } = useHandleMenuClick();
@@ -105,7 +107,7 @@ export function SideBar() {
             logout();
           }}
         >
-          Log Out
+          {t('setting.logout')}
         </Button>
       </div>
     </aside>

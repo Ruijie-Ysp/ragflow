@@ -210,4 +210,31 @@ export default {
   removeDataflow: `${api_host}/dataflow/rm`,
   listDataflow: `${api_host}/dataflow/list`,
   runDataflow: `${api_host}/dataflow/run`,
+
+  // corpus
+  getCorpusStatistics: `${api_host}/corpus/statistics`,
+  getDatabaseConfig: `${api_host}/corpus/database_config`,
+  saveDatabaseConfig: `${api_host}/corpus/save_database_config`,
+  testDatabaseConnection: `${api_host}/corpus/test_connection`,
+  getDatabaseList: `${api_host}/corpus/database_list`,
+  getTableList: `${api_host}/corpus/table_list`,
+  getTableFields: `${api_host}/corpus/table_fields`,
+
+  // literature - 文献处理
+  literatureList: `${api_host}/literature/list`,
+  literatureUpload: `${api_host}/literature/upload`,
+  literatureDetail: (id: string) => `${api_host}/literature/${id}`,
+  literatureDelete: (id: string) => `${api_host}/literature/${id}`,
+  literatureProcess: (id: string) => `${api_host}/literature/${id}/process`,
+  literatureFile: (id: string) => `${api_host}/literature/${id}/file`,
+  literatureAgentResults: (id: string) =>
+    `${api_host}/literature/${id}/agent_results`,
+  literatureRunAgent: (id: string) => `${api_host}/literature/${id}/run_agent`,
+  literatureAgentResult: (id: string) =>
+    `${api_host}/literature/agent_result/${id}`,
+  literatureDeleteAgentResult: (id: string) =>
+    `${api_host}/literature/agent_result/${id}`,
+  literatureMineruHealth: `${api_host}/literature/mineru/health`,
+  literatureCancelProcess: (id: string) =>
+    `${api_host}/literature/cancel/${id}`,
 };
